@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	var myFirstTr transaction.Transaction
-	myFirstTr.Test(10)
+	myFirstTr := transaction.New(1, 23.4, 3)
+	myFirstTr.CorrectTime(10, 4)
 	fmt.Println(myFirstTr)
 }
