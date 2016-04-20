@@ -26,7 +26,7 @@ func (tr Transaction) String() string {
 	return fmt.Sprintf("TRANSACTION [%d, %f, %d, %d], LIFETIME: %f", tr.id, tr.time, tr.currentPoint, tr.nextPoint, tr.lifetime)
 }
 
-// Get all transaction's paramerts.
+// Get all transaction's parameters.
 func GetParam(tr Transaction) (int, float64, int, int, float64) {
 	return tr.id, tr.time, tr.currentPoint, tr.nextPoint, tr.lifetime
 }
