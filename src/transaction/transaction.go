@@ -21,6 +21,12 @@ func (tr *Transaction) CorrectTime(NewTime float64, NewNextPoint int) {
 	tr.currentPoint, tr.nextPoint = tr.nextPoint, NewNextPoint
 }
 
+// Wait, correct time without change points.
+func (tr *Transaction) Wait(WaitingTime float64) {
+	tr.lifetime += tr.time
+	tr.time += WaitingTime
+}
+
 // Base print transaction info.
 func (tr Transaction) String() string {
 	return fmt.Sprintf("TRANSACTION [%d, %f, %d, %d], LIFETIME: %f", tr.id, tr.time, tr.currentPoint, tr.nextPoint, tr.lifetime)

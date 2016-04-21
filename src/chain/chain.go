@@ -17,7 +17,7 @@ func New(Name string) *EventChain {
 }
 
 // Insert new transaction in sorted chain.
-func (ch *EventChain) Insert(tr *transaction.Transaction) (*EventChain, error) {
+func (ch *EventChain) Insert(tr *transaction.Transaction) error {
 	if ch.Len() == 0 {
 		ch.chain = append(ch.chain, tr)
 	} else {
@@ -29,9 +29,9 @@ func (ch *EventChain) Insert(tr *transaction.Transaction) (*EventChain, error) {
 		ch.chain = result
 	}
 	if sort.IsSorted(ch) {
-		return ch, nil
+		return nil
 	} else {
-		return nil, errors.New("chain is not sorted")
+		return errors.New("chain is not sorted")
 	}
 }
 
@@ -68,7 +68,7 @@ func (ch *EventChain) GetHead() ([]*transaction.Transaction, error) {
 	tailPosition := 1
 	earliestTime := transaction.GetTime(*ch.chain[0])
 
-	for i := 1; i < length; i++ {
+	for i := tailPosition; i < length; i++ {
 		if transaction.GetTime(*ch.chain[i]) == earliestTime {
 			tailPosition++
 		} else {
