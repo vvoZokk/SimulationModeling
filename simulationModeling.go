@@ -4,10 +4,13 @@ import (
 	"chain"
 	"fmt"
 	"os"
+	"sim"
 	"transaction"
 )
 
 func main() {
+	var mySim sim.Sim
+
 	myFirstTr := transaction.New(1, 43, 3)
 	myFirstChain := chain.New("FEC")
 
@@ -18,7 +21,12 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	myFirstChain.Insert(transaction.New(4, 53, 3))
+	if Time, err := sim.Uniform(35, 55); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	} else {
+		myFirstChain.Insert(mySim.Generate(Time, 6))
+	}
 	fmt.Println(myFirstChain)
 
 	if head, err := myFirstChain.GetHead(); err != nil {

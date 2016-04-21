@@ -8,13 +8,12 @@ import (
 )
 
 type EventChain struct {
-	chain  []*transaction.Transaction
-	sorted bool
-	name   string
+	chain []*transaction.Transaction
+	name  string
 }
 
 func New(Name string) *EventChain {
-	return &EventChain{make([]*transaction.Transaction, 0, 10), true, Name}
+	return &EventChain{make([]*transaction.Transaction, 0, 10), Name}
 }
 
 // Insert new transaction in sorted chain.
