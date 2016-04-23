@@ -4,6 +4,10 @@ import (
 	"fmt"
 )
 
+type Points struct {
+	Current, Next int
+}
+
 type Transaction struct {
 	id, currentPoint, nextPoint int
 	time, lifetime              float64
@@ -40,4 +44,9 @@ func GetParam(tr Transaction) (int, float64, int, int, float64) {
 // Get transaction's time.
 func GetTime(tr Transaction) float64 {
 	return tr.time
+}
+
+// Get next point nummer.
+func GetPoints(tr Transaction) Points {
+	return Points{tr.currentPoint, tr.nextPoint}
 }

@@ -13,7 +13,7 @@ type EventChain struct {
 }
 
 func New(Name string) *EventChain {
-	return &EventChain{make([]*transaction.Transaction, 0, 10), Name}
+	return &EventChain{make([]*transaction.Transaction, 0, 20), Name}
 }
 
 // Insert new transaction in sorted chain.

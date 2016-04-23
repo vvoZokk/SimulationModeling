@@ -9,26 +9,27 @@ import (
 )
 
 const (
-	NUsed = iota
+	NAvailable = iota
+	NUsed
 	Used
-	NAvailable
 )
 
-type Paar struct {
+type Pair struct {
 	Left, Right float64
 }
 
 type Sim struct {
-	points     int
-	pointState []int
-	idCounter  int
-	simTime    float64
-	fec        *chain.EventChain
+	points      int
+	pointState  []int
+	idCounter   int
+	simTime     float64
+	fec         *chain.EventChain
+	waitingList []*transaction.Transaction
 }
 
 func New(Points int) *Sim {
 	fmt.Println(">> Simulator initialization")
-	return &Sim{Points, make([]int, Points), 0, 0.0, chain.New("FEC")}
+	return &Sim{Points, make([]int, Points), 0, 0.0, chain.New("FEC"), make([]*transaction.Transaction, 0, 10)}
 }
 
 // GENERATE block.
@@ -43,22 +44,38 @@ func (s *Sim) Advance(Tr *transaction.Transaction, NextTime float64, NextPoint i
 }
 
 // GATE and TEST block (check point's state).
-func (s *Sim) Test(Point int) (bool, error) {
-	if !(Point < s.points) {
-		return false, errors.New("incorrect point's id in Sim.Test")
+func (s *Sim) Test(List []int) (bool, error) {
+	fmt.Println("GEBUG PRINT FOR TEST: ", List)
+	for _, point := range List {
+		if !(point < s.points) {
+			return false, errors.New("incorrect point's id in Sim.Test")
+		}
+		if s.pointState[point] != NUsed {
+			return false, nil
+		}
 	}
-	if s.pointState[Point] == NUsed {
-		return true, nil
+	return true, nil
+}
+
+// Get current events chain.
+func (s *Sim) Extraction() ([]*transaction.Transaction, error) {
+	if cec, err := s.fec.GetHead(); err != nil {
+		return nil, err
 	} else {
-		return false, nil
+		return cec, nil
 	}
 }
 
+// Print simulation info.
+func (s *Sim) String() string {
+	return fmt.Sprintf(">>> Simulation time: %f, total transaction: %d, trancsaction in FEC: %d", s.simTime, s.idCounter, s.fec.Len())
+}
+
 // Get uniformly distributed random number.
-func Uniform(R *rand.Rand, Paar Paar) (float64, error) {
-	if Paar.Left > Paar.Right {
-		return 0.0, errors.New(fmt.Sprintf("incorrect limits in Uniform: (%f, %f)", Paar.Left, Paar.Right))
+func Uniform(R *rand.Rand, Limits Pair) (float64, error) {
+	if Limits.Left > Limits.Right {
+		return 0.0, errors.New(fmt.Sprintf("incorrect limits in Uniform: (%f, %f)", Limits.Left, Limits.Right))
 	} else {
-		return Paar.Left + R.Float64()*(Paar.Right-Paar.Left), nil
+		return Limits.Left + R.Float64()*(Limits.Right-Limits.Left), nil
 	}
 }

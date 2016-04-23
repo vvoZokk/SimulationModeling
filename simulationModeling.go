@@ -7,7 +7,7 @@ import (
 	"os"
 	"sim"
 	"time"
-	//"transaction"
+	"transaction"
 )
 
 const (
@@ -24,51 +24,62 @@ const (
 	Terminate
 )
 
-func main() {
+func GenUniform(S *sim.Sim, R *rand.Rand, Limits sim.Pair, PointList []int) {
+	for _, point := range PointList {
+		if time, err := sim.Uniform(R, Limits); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		} else {
+			S.Generate(time, point)
+		}
+	}
+}
 
-	Rand := rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	CLSim := sim.New(Points)
-	//Timings := map[string]sim.Paar{}
-
-	if Time, err := sim.Uniform(Rand, sim.Paar{35, 55}); err != nil {
+func TimerCorrectionPhase(S *sim.Sim, CheckTable map[transaction.Points][]int) {
+	cec, err := S.Extraction()
+	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
-	} else {
-		CLSim.Generate(Time, PointAw)
 	}
-	CLSim.Generate(43, PointBw)
-
-	/*
-		myFirstTr := transaction.New(1, 43, 3)
-		myFirstChain := chain.New("FEC")
-		myRand := c
-
-		myFirstTr.CorrectTime(10, 4)
-		myFirstChain.Insert(myFirstTr)
-
-		if _, err := myFirstChain.Insert(transaction.New(3, 130, 3)); err != nil {
+	for _, tr := range cec {
+		check, err := S.Test(CheckTable[transaction.GetPoints(*tr)])
+		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		if Time, err := sim.Uniform(myRand, 35, 55); err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		} else {
-			myFirstChain.Insert(mySim.Generate(Time, 6))
-		}
-		fmt.Println(myFirstChain)
+		//
+		fmt.Println(check)
+	}
+}
 
-		if head, err := myFirstChain.GetHead(); err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+func main() {
 
-		} else {
-			fmt.Println("Transsactions in head:")
-			for _, tr := range head {
-				fmt.Println(tr)
-			}
-		}
-		fmt.Printf("FEC current length %d", myFirstChain.Len())
-	*/
+	// Init section
+
+	timings := map[string]sim.Pair{
+		"Station": sim.Pair{35, 55},
+		"AC":      sim.Pair{12, 18},
+		"BC":      sim.Pair{17, 23},
+		"Timer":   sim.Pair{1440, 1440}}
+
+	checks := map[transaction.Points][]int{
+		transaction.Points{PointAw, PointA}:  []int{PointAC, PointCw},
+		transaction.Points{PointBw, PointB}:  []int{PointBC, PointCw},
+		transaction.Points{PointAC, PointC}:  []int{PointBC},
+		transaction.Points{PointCw, PointBC}: []int{PointBC},
+		transaction.Points{PointBC, PointC}:  []int{PointAC},
+		transaction.Points{PointCw, PointAC}: []int{PointAC},
+	}
+
+	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	CLSim := sim.New(Points)
+
+	// Begin simulation
+
+	GenUniform(CLSim, rand, timings["Timer"], []int{Terminate})
+	GenUniform(CLSim, rand, timings["Station"], []int{PointAw, PointBw})
+	fmt.Println(CLSim)
+
+	TimerCorrectionPhase(CLSim, checks)
+
 }
