@@ -25,12 +25,19 @@ type Sim struct {
 	simTime     float64
 	fec         *chain.EventChain
 	waitingList []*transaction.Transaction
-	Finish      bool
+	finish      bool
 }
 
 func New(Points int) *Sim {
+	return &Sim{Points, make([]int, Points), 0, 0.0, chain.New("FEC"), make([]*transaction.Transaction, 0, 10), true}
+}
+
+func (s *Sim) Init() {
+	for i, _ := range s.pointState {
+		s.pointState[i] = NUsed
+	}
+	s.finish = false
 	fmt.Println(">> Simulator initialization")
-	return &Sim{Points, make([]int, Points), 0, 0.0, chain.New("FEC"), make([]*transaction.Transaction, 0, 10), false}
 }
 
 // GENERATE block.
@@ -88,11 +95,12 @@ func (s *Sim) ReleasePoint(Point int) error {
 
 // TERMINATE block.
 func (s *Sim) Terminate() {
-	s.Finish = true
+	s.finish = true
 }
 
 // Set next point for transaction, release and seize point.
 func (s *Sim) UsePoint(Tr *transaction.Transaction, NextTime float64, NextPoint int) error {
+	fmt.Println("GEBUG PRINT FOR USE: ", Tr)
 	points := transaction.GetPoints(*Tr)
 	if err := s.ReleasePoint(points.Current); err != nil {
 		return err
@@ -114,6 +122,11 @@ func (s *Sim) Extraction() ([]*transaction.Transaction, error) {
 	} else {
 		return cec, nil
 	}
+}
+
+// Check end of simulation.
+func (s *Sim) IsFinish() bool {
+	return s.finish
 }
 
 // Print simulation info.

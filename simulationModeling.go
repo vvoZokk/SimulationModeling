@@ -10,10 +10,8 @@ import (
 	"transaction"
 )
 
-const (
-	Points = 8
-
-	//List of points
+const Points = 8
+const ( // List of points
 	Point0 = iota
 	PointA
 	PointB
@@ -22,8 +20,8 @@ const (
 	PointAC
 	PointBC
 	ClockPoint
-
-	// List of actions
+)
+const ( // List of actions
 	Generate = iota
 	Wait
 	Use
@@ -53,7 +51,6 @@ func TimerCorrectionPhase(S *sim.Sim, CheckTable map[transaction.Points][]int) {
 		os.Exit(1)
 	}
 	for _, tr := range cec {
-		fmt.Println("in transaction: ", transaction.GetPoints(*tr))
 		check, err := S.Test(CheckTable[transaction.GetPoints(*tr)])
 		if err != nil {
 			fmt.Println(err)
@@ -110,14 +107,13 @@ func main() {
 
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	CLSim := sim.New(Points)
+	CLSim.Init()
 
 	// Begin simulation
 
 	GenerateUniform(CLSim, rand, timings["Timer"], []int{Terminate})
 	GenerateUniform(CLSim, rand, timings["Station"], []int{PointA, PointB})
 	fmt.Println(CLSim)
-
-	fmt.Println(checks[transaction.Points{Point0, PointA}])
 
 	fmt.Println(transfers[Checks{PointAC, PointA, true}])
 
