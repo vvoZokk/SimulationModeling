@@ -11,16 +11,22 @@ import (
 )
 
 const (
-	Points = 9
+	Points = 8
 
-	PointAw = iota
+	//List of points
+	Point0 = iota
 	PointA
-	PointBw
 	PointB
 	PointCw
 	PointC
 	PointAC
 	PointBC
+	ClockPoint
+
+	// List of actions
+	Generate = iota
+	Wait
+	Use
 	Terminate
 )
 
@@ -29,7 +35,7 @@ type Checks struct {
 	check     bool
 }
 
-func GenUniform(S *sim.Sim, R *rand.Rand, Limits sim.Pair, PointList []int) {
+func GenerateUniform(S *sim.Sim, R *rand.Rand, Limits sim.Pair, PointList []int) {
 	for _, point := range PointList {
 		if time, err := sim.Uniform(R, Limits); err != nil {
 			fmt.Println(err)
@@ -47,12 +53,14 @@ func TimerCorrectionPhase(S *sim.Sim, CheckTable map[transaction.Points][]int) {
 		os.Exit(1)
 	}
 	for _, tr := range cec {
+		fmt.Println("in transaction: ", transaction.GetPoints(*tr))
 		check, err := S.Test(CheckTable[transaction.GetPoints(*tr)])
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 		//
+
 		fmt.Println(check)
 	}
 }
@@ -68,8 +76,8 @@ func main() {
 		"Timer":   sim.Pair{1440, 1440}}
 
 	checks := map[transaction.Points][]int{
-		transaction.Points{PointAw, PointA}:  []int{PointAC, PointCw},
-		transaction.Points{PointBw, PointB}:  []int{PointBC, PointCw},
+		transaction.Points{Point0, PointA}:   []int{PointAC, PointCw},
+		transaction.Points{Point0, PointB}:   []int{PointBC, PointCw},
 		transaction.Points{PointAC, PointC}:  []int{PointBC},
 		transaction.Points{PointCw, PointBC}: []int{PointBC},
 		transaction.Points{PointBC, PointC}:  []int{PointAC},
@@ -77,8 +85,8 @@ func main() {
 	}
 
 	transfers := map[Checks]string{
-		{PointAw, PointA, false}:      "wait",
-		{PointAw, PointA, true}:       "tc0_AC + use_A + gen_A", // >A****C****B
+		{Point0, PointA, false}:       "wait",
+		{Point0, PointA, true}:        "tc0_AC + use_A + gen_A", // >A****C****B
 		{PointA, PointAC, true /*_*/}: "tc0_C + use_AC",         // A->***C****B
 		{PointAC, PointC, true}:       "tcUnif_BC + use_C",      // A***->C****B
 		{PointAC, PointC, false}:      "tcUnif_Cw + use_C",      // A***->W****B
@@ -88,8 +96,8 @@ func main() {
 		{PointC, PointBC, true /*_*/}: "tcUnif_B + use_BC",      // A****C->***B
 		{PointBC, PointB, true /*_*/}: "tc0_ + use_B",           // A****C***->B
 
-		{PointBw, PointB, false}:      "wait",
-		{PointBw, PointB, true}:       "tc0_BC + use_B + gen_B", // A****C****B<
+		{Point0, PointB, false}:       "wait",
+		{Point0, PointB, true}:        "tc0_BC + use_B + gen_B", // A****C****B<
 		{PointB, PointBC, true /*_*/}: "tc0_C + use_BC",         // A****C***<-B
 		{PointBC, PointC, true}:       "tcUnif_BC + use_C",      // A****C<-***B
 		{PointBC, PointC, false}:      "tcUnif_Cw + use_C",      // A****W<-***B
@@ -105,9 +113,13 @@ func main() {
 
 	// Begin simulation
 
-	GenUniform(CLSim, rand, timings["Timer"], []int{Terminate})
-	GenUniform(CLSim, rand, timings["Station"], []int{PointAw, PointBw})
+	GenerateUniform(CLSim, rand, timings["Timer"], []int{Terminate})
+	GenerateUniform(CLSim, rand, timings["Station"], []int{PointA, PointB})
 	fmt.Println(CLSim)
+
+	fmt.Println(checks[transaction.Points{Point0, PointA}])
+
+	fmt.Println(transfers[Checks{PointAC, PointA, true}])
 
 	TimerCorrectionPhase(CLSim, checks)
 

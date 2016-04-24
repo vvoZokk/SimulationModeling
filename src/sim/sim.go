@@ -25,11 +25,12 @@ type Sim struct {
 	simTime     float64
 	fec         *chain.EventChain
 	waitingList []*transaction.Transaction
+	Finish      bool
 }
 
 func New(Points int) *Sim {
 	fmt.Println(">> Simulator initialization")
-	return &Sim{Points, make([]int, Points), 0, 0.0, chain.New("FEC"), make([]*transaction.Transaction, 0, 10)}
+	return &Sim{Points, make([]int, Points), 0, 0.0, chain.New("FEC"), make([]*transaction.Transaction, 0, 10), false}
 }
 
 // GENERATE block.
@@ -55,6 +56,55 @@ func (s *Sim) Test(List []int) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+// SEIZE block.
+func (s *Sim) SeizePoint(Point int) error {
+	if Point < s.points {
+		if s.pointState[Point] != NAvailable {
+			s.pointState[Point] = Used
+			return nil
+		} else {
+			return errors.New("point not available in Sim.Seize")
+		}
+	} else {
+		return errors.New("incorrect point's id in Sim.Seize")
+	}
+}
+
+// RELEASE block.
+func (s *Sim) ReleasePoint(Point int) error {
+	if Point < s.points {
+		if s.pointState[Point] != NAvailable {
+			s.pointState[Point] = NUsed
+			return nil
+		} else {
+			return errors.New("point not available in Sim.Seize")
+		}
+	} else {
+		return errors.New("incorrect point's id in Sim.Seize")
+	}
+}
+
+// TERMINATE block.
+func (s *Sim) Terminate() {
+	s.Finish = true
+}
+
+// Set next point for transaction, release and seize point.
+func (s *Sim) UsePoint(Tr *transaction.Transaction, NextTime float64, NextPoint int) error {
+	points := transaction.GetPoints(*Tr)
+	if err := s.ReleasePoint(points.Current); err != nil {
+		return err
+	}
+	if err := s.SeizePoint(points.Next); err != nil {
+		return err
+	}
+	Tr.CorrectTime(NextTime, NextPoint)
+	if err := s.fec.Insert(Tr); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Get current events chain.

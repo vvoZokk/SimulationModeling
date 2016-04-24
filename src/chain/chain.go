@@ -17,15 +17,15 @@ func New(Name string) *EventChain {
 }
 
 // Insert new transaction in sorted chain.
-func (ch *EventChain) Insert(tr *transaction.Transaction) error {
+func (ch *EventChain) Insert(Tr *transaction.Transaction) error {
 	if ch.Len() == 0 {
-		ch.chain = append(ch.chain, tr)
+		ch.chain = append(ch.chain, Tr)
 	} else {
 
 		result := make([]*transaction.Transaction, len(ch.chain)+1)
-		position := sort.Search(ch.Len(), func(i int) bool { return transaction.GetTime(*ch.chain[i]) >= transaction.GetTime(*tr) })
+		position := sort.Search(ch.Len(), func(i int) bool { return transaction.GetTime(*ch.chain[i]) >= transaction.GetTime(*Tr) })
 
-		result = append(ch.chain[:position], append([]*transaction.Transaction{tr}, ch.chain[position:]...)...)
+		result = append(ch.chain[:position], append([]*transaction.Transaction{Tr}, ch.chain[position:]...)...)
 		ch.chain = result
 	}
 	if sort.IsSorted(ch) {
