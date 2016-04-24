@@ -46,7 +46,7 @@ func GetTime(tr Transaction) float64 {
 	return tr.time
 }
 
-// Get next point nummer.
+// Get transaction's points.
 func GetPoints(tr Transaction) Points {
 	return Points{tr.currentPoint, tr.nextPoint}
 }
