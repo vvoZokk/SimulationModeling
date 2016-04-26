@@ -112,6 +112,9 @@ func (s *Sim) UsePoint(Tr *transaction.Transaction, NextTime float64, NextPoint 
 	if err := s.fec.Insert(Tr); err != nil {
 		return err
 	}
+	//
+	fmt.Println(s.pointState)
+	//
 	return nil
 }
 
