@@ -21,7 +21,6 @@ func (ch *EventChain) Insert(Tr *transaction.Transaction) error {
 	if ch.Len() == 0 {
 		ch.chain = append(ch.chain, Tr)
 	} else {
-		fmt.Println("^^^^^ BEFORE\n", ch)
 		result := make([]*transaction.Transaction, len(ch.chain)+1)
 		position := sort.Search(ch.Len(), func(i int) bool { return transaction.GetTime(*ch.chain[i]) >= transaction.GetTime(*Tr) })
 
@@ -77,7 +76,6 @@ func (ch *EventChain) GetHead() ([]*transaction.Transaction, error) {
 	}
 	head := ch.chain[:tailPosition]
 	ch.chain = ch.chain[tailPosition:]
-	fmt.Println("_____ AFTER\n", ch)
 	if len(head) < 1 {
 		return nil, errors.New("no transaction in chain")
 	}

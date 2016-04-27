@@ -64,8 +64,6 @@ func UseBlock(S *sim.Sim, Tr *transaction.Transaction, Time float64, NextPoint i
 
 func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[transaction.Points][]int, RoadMap map[Checks][]Action) {
 	cec, err := S.Extraction()
-
-	fmt.Println("******* AFTER EXTraction ", S.GetFEC())
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -79,7 +77,6 @@ func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[
 		}
 		actions := RoadMap[Checks{points.Current, points.Next, check}]
 		for _, action := range actions {
-			waitingTime := S.GetSimTime() - transaction.GetTime(*tr)
 			if action.Type == Wait {
 				// GEBUG PRINT
 				fmt.Println("WAIT ACTION", tr)
@@ -95,17 +92,14 @@ func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[
 				fmt.Println("USE ACTION")
 				switch {
 				case action.Arguments[0] == 0:
-					UseBlock(S, tr, waitingTime, action.Arguments[1])
+					UseBlock(S, tr, 0.0, action.Arguments[1])
 				default:
 					if time, err := sim.Uniform(R, TimeTable[action.Arguments[0]]); err != nil {
 						fmt.Println(err)
 						os.Exit(1)
 					} else {
-						UseBlock(S, tr, waitingTime+time, action.Arguments[1])
+						UseBlock(S, tr, time, action.Arguments[1])
 					}
-				}
-				if waitingTime != 0.0 {
-					S.RemoveFromWaitlist(tr)
 				}
 			}
 			if action.Type == Terminate {
@@ -115,6 +109,35 @@ func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[
 			}
 		}
 	}
+	for _, tr := range S.GetWaitlist() {
+		points := transaction.GetPoints(*tr)
+		check, err := S.Test(CheckTable[points])
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		actions := RoadMap[Checks{points.Current, points.Next, check}]
+		for _, action := range actions {
+			waitingTime := S.GetSimTime() - transaction.GetTime(*tr)
+			if action.Type == Use {
+				// GEBUG PRINT
+				fmt.Println("USE ACTION FOR WAITING TRANSACTION")
+				switch {
+				case action.Arguments[0] == 0:
+					UseBlock(S, tr, waitingTime, action.Arguments[1])
+				default:
+					if time, err := sim.Uniform(R, TimeTable[action.Arguments[0]]); err != nil {
+						fmt.Println(err)
+						os.Exit(1)
+					} else {
+						UseBlock(S, tr, waitingTime+time, action.Arguments[1])
+					}
+				}
+				S.RemoveFromWaitlist(tr)
+			}
+		}
+	}
+
 }
 
 func main() {

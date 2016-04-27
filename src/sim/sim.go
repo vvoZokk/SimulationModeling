@@ -109,6 +109,7 @@ func (s *Sim) RemoveFromWaitlist(Tr *transaction.Transaction) int {
 	for i := 0; i < len(s.waitingList); i++ {
 		if transaction.GetId(*s.waitingList[i]) == transaction.GetId(*Tr) {
 			number = i
+			check = true
 			break
 		}
 	}
@@ -134,7 +135,7 @@ func (s *Sim) UsePoint(Tr *transaction.Transaction, NextTime float64, NextPoint 
 		return err
 	}
 	// DEBUG PRINT
-	fmt.Println("POINTS: ", s.pointState, s.fec)
+	fmt.Println("POINTS: ", s.pointState)
 
 	return nil
 }
@@ -159,14 +160,13 @@ func (s *Sim) Extraction() ([]*transaction.Transaction, error) {
 	for _, t := range s.waitingList {
 		fmt.Println(t)
 	}
+	fmt.Println("-----")
 
 	if cec, err := s.fec.GetHead(); err != nil {
 		return nil, err
 	} else {
 		s.simTime = transaction.GetTime(*cec[0])
-
-		fmt.Println("<<<<< FEC, after extension ", s.fec)
-		return append(cec, s.waitingList...), nil
+		return cec, nil
 	}
 }
 
@@ -180,8 +180,9 @@ func (s *Sim) String() string {
 	return fmt.Sprintf(">>> Simulation time: %f, total transaction: %d, trancsaction in FEC: %d", s.simTime, s.idCounter, s.fec.Len()) + "\n" + fmt.Sprint(s.fec)
 }
 
-func (s *Sim) GetFEC() *chain.EventChain {
-	return s.fec
+// Get waitlist.
+func (s *Sim) GetWaitlist() []*transaction.Transaction {
+	return s.waitingList
 }
 
 // Get uniformly distributed random number.
