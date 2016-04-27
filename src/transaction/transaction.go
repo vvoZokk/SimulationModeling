@@ -37,16 +37,21 @@ func (tr Transaction) String() string {
 }
 
 // Get all transaction's parameters.
-func GetParam(tr Transaction) (int, float64, int, int, float64) {
-	return tr.id, tr.time, tr.currentPoint, tr.nextPoint, tr.lifetime
+func GetParam(Tr Transaction) (int, float64, int, int, float64) {
+	return Tr.id, Tr.time, Tr.currentPoint, Tr.nextPoint, Tr.lifetime
+}
+
+// Get transaction's ID.
+func GetId(Tr Transaction) int {
+	return Tr.id
 }
 
 // Get transaction's time.
-func GetTime(tr Transaction) float64 {
-	return tr.time
+func GetTime(Tr Transaction) float64 {
+	return Tr.time
 }
 
 // Get transaction's points.
-func GetPoints(tr Transaction) Points {
-	return Points{tr.currentPoint, tr.nextPoint}
+func GetPoints(Tr Transaction) Points {
+	return Points{Tr.currentPoint, Tr.nextPoint}
 }

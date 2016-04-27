@@ -53,7 +53,6 @@ func (s *Sim) Advance(Tr *transaction.Transaction, NextTime float64, NextPoint i
 
 // GATE and TEST block (check point's state).
 func (s *Sim) Test(List []int) (bool, error) {
-	fmt.Println("GEBUG PRINT FOR TEST: ", List)
 	for _, point := range List {
 		if !(point < s.points) {
 			return false, errors.New("incorrect point's id in Sim.Test")
@@ -98,6 +97,27 @@ func (s *Sim) Terminate() {
 	s.finish = true
 }
 
+// Add to waitlist.
+func (s *Sim) AddToWaitlist(Tr *transaction.Transaction) int {
+	s.waitingList = append(s.waitingList, Tr)
+	return len(s.waitingList)
+}
+
+// Remove from waitlist.
+func (s *Sim) RemoveFromWaitlist(Tr *transaction.Transaction) int {
+	number, check := 0, false
+	for i := 0; i < len(s.waitingList); i++ {
+		if transaction.GetId(*s.waitingList[i]) == transaction.GetId(*Tr) {
+			number = i
+			break
+		}
+	}
+	if check {
+		s.waitingList = append(s.waitingList[:number], s.waitingList[number+1:]...)
+	}
+	return len(s.waitingList)
+}
+
 // Set next point for transaction, release and seize point.
 func (s *Sim) UsePoint(Tr *transaction.Transaction, NextTime float64, NextPoint int) error {
 	fmt.Println("GEBUG PRINT FOR USE: ", Tr)
@@ -109,11 +129,12 @@ func (s *Sim) UsePoint(Tr *transaction.Transaction, NextTime float64, NextPoint 
 		return err
 	}
 	Tr.CorrectTime(NextTime, NextPoint)
+	fmt.Println("GEBUG PRINT FOR USE BEFORE COR: ", Tr)
 	if err := s.fec.Insert(Tr); err != nil {
 		return err
 	}
 	// DEBUG PRINT
-	fmt.Println(s.pointState)
+	fmt.Println("POINTS: ", s.pointState, s.fec)
 
 	return nil
 }
@@ -133,11 +154,19 @@ func (s *Sim) CorrectTime(NewTime float64) error {
 
 // Get current events chain.
 func (s *Sim) Extraction() ([]*transaction.Transaction, error) {
+	// DEBUG PRINT
+	fmt.Println("---->WAITLIST")
+	for _, t := range s.waitingList {
+		fmt.Println(t)
+	}
+
 	if cec, err := s.fec.GetHead(); err != nil {
 		return nil, err
 	} else {
 		s.simTime = transaction.GetTime(*cec[0])
-		return cec, nil
+
+		fmt.Println("<<<<< FEC, after extension ", s.fec)
+		return append(cec, s.waitingList...), nil
 	}
 }
 
@@ -149,6 +178,10 @@ func (s *Sim) IsFinish() bool {
 // Print simulation info.
 func (s *Sim) String() string {
 	return fmt.Sprintf(">>> Simulation time: %f, total transaction: %d, trancsaction in FEC: %d", s.simTime, s.idCounter, s.fec.Len()) + "\n" + fmt.Sprint(s.fec)
+}
+
+func (s *Sim) GetFEC() *chain.EventChain {
+	return s.fec
 }
 
 // Get uniformly distributed random number.
