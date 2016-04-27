@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"chain"
 	"fmt"
 	"math/rand"
 	"os"
@@ -50,7 +49,7 @@ func GenerateUniform(S *sim.Sim, R *rand.Rand, Limits sim.Pair, PointList []int)
 			fmt.Println(err)
 			os.Exit(1)
 		} else {
-			S.Generate(time, point)
+			S.Generate(S.GetSimTime()+time, point)
 		}
 	}
 }
@@ -116,7 +115,7 @@ func main() {
 		Station: sim.Pair{35, 55},
 		AC:      sim.Pair{12, 18},
 		BC:      sim.Pair{17, 23},
-		Timer:   sim.Pair{1440, 1440}}
+		Timer:   sim.Pair{3 * 60, 3 * 60}}
 
 	checks := map[transaction.Points][]int{
 		transaction.Points{Point0, PointA}:   []int{PointAC, PointCw},
@@ -159,10 +158,12 @@ func main() {
 
 	// Begin simulation
 
-	GenerateUniform(CLSim, rand, timings[Timer], []int{Terminate})
+	GenerateUniform(CLSim, rand, timings[Timer], []int{ClockPoint})
 	GenerateUniform(CLSim, rand, timings[Station], []int{PointA, PointB})
 	fmt.Println(CLSim)
-
-	Phase(CLSim, rand, timings, checks, transfers)
+	for !CLSim.IsFinish() {
+		Phase(CLSim, rand, timings, checks, transfers)
+		fmt.Println(CLSim)
+	}
 
 }

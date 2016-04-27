@@ -20,14 +20,14 @@ func New(Id int, Time float64, NextPoint int) *Transaction {
 
 // Correct time, shift and set points for transaction.
 func (tr *Transaction) CorrectTime(NewTime float64, NewNextPoint int) {
-	tr.lifetime += tr.time
+	tr.lifetime += NewTime
 	tr.time += NewTime
 	tr.currentPoint, tr.nextPoint = tr.nextPoint, NewNextPoint
 }
 
 // Wait, correct time without change points.
 func (tr *Transaction) Wait(WaitingTime float64) {
-	tr.lifetime += tr.time
+	tr.lifetime += WaitingTime
 	tr.time += WaitingTime
 }
 

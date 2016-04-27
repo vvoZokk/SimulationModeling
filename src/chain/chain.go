@@ -77,5 +77,8 @@ func (ch *EventChain) GetHead() ([]*transaction.Transaction, error) {
 	}
 	head := ch.chain[:tailPosition]
 	ch.chain = ch.chain[tailPosition:]
+	if len(head) < 1 {
+		return nil, errors.New("no transaction in chain")
+	}
 	return head, nil
 }

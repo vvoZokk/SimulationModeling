@@ -112,9 +112,22 @@ func (s *Sim) UsePoint(Tr *transaction.Transaction, NextTime float64, NextPoint 
 	if err := s.fec.Insert(Tr); err != nil {
 		return err
 	}
-	//
+	// DEBUG PRINT
 	fmt.Println(s.pointState)
-	//
+
+	return nil
+}
+
+// Get current sumulation time.
+func (s *Sim) GetSimTime() float64 {
+	return s.simTime
+}
+
+// Correct simulation time.
+func (s *Sim) CorrectTime(NewTime float64) error {
+	if s.simTime = NewTime; s.simTime == 0 {
+		return errors.New("simulation not started")
+	}
 	return nil
 }
 
@@ -123,6 +136,7 @@ func (s *Sim) Extraction() ([]*transaction.Transaction, error) {
 	if cec, err := s.fec.GetHead(); err != nil {
 		return nil, err
 	} else {
+		s.simTime = transaction.GetTime(*cec[0])
 		return cec, nil
 	}
 }
@@ -134,7 +148,7 @@ func (s *Sim) IsFinish() bool {
 
 // Print simulation info.
 func (s *Sim) String() string {
-	return fmt.Sprintf(">>> Simulation time: %f, total transaction: %d, trancsaction in FEC: %d", s.simTime, s.idCounter, s.fec.Len())
+	return fmt.Sprintf(">>> Simulation time: %f, total transaction: %d, trancsaction in FEC: %d", s.simTime, s.idCounter, s.fec.Len()) + "\n" + fmt.Sprint(s.fec)
 }
 
 // Get uniformly distributed random number.
