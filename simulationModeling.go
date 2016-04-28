@@ -14,8 +14,8 @@ const ( // List of points
 	Point0  = iota
 	PointA  // 1
 	PointB  // 2
-	PointCw // 3
-	PointC  // 4
+	PointCm // 3, main
+	PointCr // 4, reserve
 	PointAC // 5
 	PointBC // 6
 	ClockPoint
@@ -134,6 +134,8 @@ func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[
 					}
 				}
 				S.RemoveFromWaitlist(tr)
+				// GEBUG PRINT
+				fmt.Println("WAITING TIME: ", waitingTime)
 			}
 		}
 	}
@@ -151,35 +153,39 @@ func main() {
 		Timer:   sim.Pair{3 * 60, 3 * 60}}
 
 	checks := map[transaction.Points][]int{
-		transaction.Points{Point0, PointA}:   []int{PointAC, PointCw},
-		transaction.Points{Point0, PointB}:   []int{PointBC, PointCw},
-		transaction.Points{PointAC, PointC}:  []int{PointBC},
-		transaction.Points{PointCw, PointBC}: []int{PointBC},
-		transaction.Points{PointBC, PointC}:  []int{PointAC},
-		transaction.Points{PointCw, PointAC}: []int{PointAC},
+		transaction.Points{Point0, PointA}:   []int{PointAC, PointCm, PointCr},
+		transaction.Points{Point0, PointB}:   []int{PointBC, PointCm, PointCr},
+		transaction.Points{PointA, PointAC}:  []int{PointBC},
+		transaction.Points{PointCr, PointBC}: []int{PointBC},
+		transaction.Points{PointCm, PointBC}: []int{PointBC},
+		transaction.Points{PointB, PointCr}:  []int{PointAC},
+		transaction.Points{PointCr, PointAC}: []int{PointAC},
+		transaction.Points{PointCm, PointAC}: []int{PointAC},
 	}
 
 	transfers := map[Checks][]Action{
 		{Point0, PointA, false}:   []Action{Action{Wait, []int{}}},                                                    // >A****C****B
 		{Point0, PointA, true}:    []Action{Action{Use, []int{0, PointAC}}, Action{Generate, []int{Station, PointA}}}, // >A****C****B
-		{PointA, PointAC, true}:   []Action{Action{Use, []int{AC, PointC}}},                                           // A->***C****B
-		{PointAC, PointC, true}:   []Action{Action{Use, []int{0, PointBC}}},                                           // A***->C****B
-		{PointAC, PointC, false}:  []Action{Action{Use, []int{0, PointCw}}},                                           // A***->W****B
-		{PointC, PointCw, true}:   []Action{Action{Use, []int{0, PointBC}}},                                           // A****>W<****B
-		{PointCw, PointBC, false}: []Action{Action{Wait, []int{}}},                                                    // A****>W<****B
-		{PointCw, PointBC, true}:  []Action{Action{Use, []int{BC, PointB}}},                                           // A****W->***B
-		{PointC, PointBC, true}:   []Action{Action{Use, []int{BC, PointB}}},                                           // A****C->***B
+		{PointA, PointAC, false}:  []Action{Action{Use, []int{AC, PointCr}}},                                          // A>***Cr****B
+		{PointA, PointAC, true}:   []Action{Action{Use, []int{AC, PointCm}}},                                          // A>***Cm****B
+		{PointAC, PointCm, true}:  []Action{Action{Use, []int{0, PointBC}}},                                           //
+		{PointAC, PointCr, true}:  []Action{Action{Use, []int{0, PointBC}}},                                           //
+		{PointCm, PointBC, false}: []Action{Action{Wait, []int{}}},                                                    // A***>Cm<***B
+		{PointCm, PointBC, true}:  []Action{Action{Use, []int{BC, PointB}}},                                           // A****Cm>***B
+		{PointCr, PointBC, false}: []Action{Action{Wait, []int{}}},                                                    // A***>Cr<***B
+		{PointCr, PointBC, true}:  []Action{Action{Use, []int{BC, PointB}}},                                           // A****Cr>***B
 		{PointBC, PointB, true}:   []Action{Action{Use, []int{0, Point0}}},                                            // A****C***->B
 
 		{Point0, PointB, false}:   []Action{Action{Wait, []int{}}},                                                    // A****C****B<
 		{Point0, PointB, true}:    []Action{Action{Use, []int{0, PointBC}}, Action{Generate, []int{Station, PointB}}}, // A****C****B<
-		{PointB, PointBC, true}:   []Action{Action{Use, []int{BC, PointC}}},                                           // A****C***<-B
-		{PointBC, PointC, true}:   []Action{Action{Use, []int{0, PointAC}}},                                           // A****C<-***B
-		{PointBC, PointC, false}:  []Action{Action{Use, []int{0, PointCw}}},                                           // A****W<-***B
-		{PointC, PointCw, true}:   []Action{Action{Use, []int{0, PointAC}}},                                           // A****>W<****B
-		{PointCw, PointAC, false}: []Action{Action{Wait, []int{}}},                                                    // A****>W<****B
-		{PointCw, PointAC, true}:  []Action{Action{Use, []int{AC, PointA}}},                                           // A***<-W****B
-		{PointC, PointAC, true}:   []Action{Action{Use, []int{AC, PointA}}},                                           // A***<-C****B
+		{PointB, PointBC, false}:  []Action{Action{Use, []int{BC, PointCr}}},                                          // A****Cr***<B
+		{PointB, PointBC, true}:   []Action{Action{Use, []int{BC, PointCm}}},                                          // A****Cm***<B
+		{PointBC, PointCm, true}:  []Action{Action{Use, []int{0, PointAC}}},                                           //
+		{PointBC, PointCr, true}:  []Action{Action{Use, []int{0, PointAC}}},                                           //
+		{PointCm, PointAC, false}: []Action{Action{Wait, []int{}}},                                                    // A***>Cm<***B
+		{PointCm, PointAC, true}:  []Action{Action{Use, []int{AC, PointA}}},                                           // A****Cm>***B
+		{PointCr, PointAC, false}: []Action{Action{Wait, []int{}}},                                                    // A***>Cr<***B
+		{PointCr, PointAC, true}:  []Action{Action{Use, []int{AC, PointA}}},                                           // A****Cr>***B
 		{PointAC, PointA, true}:   []Action{Action{Use, []int{0, Point0}}},                                            // A<-***C****B
 
 		{Point0, ClockPoint, true}: []Action{Action{Terminate, []int{}}}, // Clock

@@ -134,9 +134,6 @@ func (s *Sim) UsePoint(Tr *transaction.Transaction, NextTime float64, NextPoint 
 	if err := s.fec.Insert(Tr); err != nil {
 		return err
 	}
-	// DEBUG PRINT
-	fmt.Println("POINTS: ", s.pointState)
-
 	return nil
 }
 
@@ -155,13 +152,6 @@ func (s *Sim) CorrectTime(NewTime float64) error {
 
 // Get current events chain.
 func (s *Sim) Extraction() ([]*transaction.Transaction, error) {
-	// DEBUG PRINT
-	fmt.Println("---->WAITLIST")
-	for _, t := range s.waitingList {
-		fmt.Println(t)
-	}
-	fmt.Println("-----")
-
 	if cec, err := s.fec.GetHead(); err != nil {
 		return nil, err
 	} else {
