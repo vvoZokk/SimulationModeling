@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"sim"
+	"strconv"
 	"time"
 	"transaction"
 )
@@ -55,7 +57,6 @@ func GenerateUniform(S *sim.Sim, R *rand.Rand, Limits sim.Pair, PointList []int)
 }
 
 func UseBlock(S *sim.Sim, Tr *transaction.Transaction, Time float64, NextPoint int) {
-	//if NextPoint != Point0
 	if err := S.UsePoint(Tr, Time, NextPoint); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -79,17 +80,17 @@ func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[
 		for _, action := range actions {
 			if action.Type == Wait {
 				// GEBUG PRINT
-				fmt.Println("WAIT ACTION", tr)
+				//fmt.Println("WAIT ACTION", tr)
 				S.AddToWaitlist(tr)
 			}
 			if action.Type == Generate {
 				// GEBUG PRINT
-				fmt.Println("GENERATE ACTION")
+				//fmt.Println("GENERATE ACTION")
 				GenerateUniform(S, R, TimeTable[action.Arguments[0]], []int{action.Arguments[1]})
 			}
 			if action.Type == Use {
 				// GEBUG PRINT
-				fmt.Println("USE ACTION")
+				//fmt.Println("USE ACTION")
 				switch {
 				case action.Arguments[0] == 0:
 					UseBlock(S, tr, 0.0, action.Arguments[1])
@@ -104,7 +105,7 @@ func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[
 			}
 			if action.Type == Terminate {
 				// GEBUG PRINT
-				fmt.Println("TERMINATE ACTION")
+				//fmt.Println("TERMINATE ACTION")
 				S.Terminate()
 			}
 		}
@@ -121,7 +122,7 @@ func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[
 			waitingTime := S.GetSimTime() - transaction.GetTime(*tr)
 			if action.Type == Use {
 				// GEBUG PRINT
-				fmt.Println("USE ACTION FOR WAITING TRANSACTION")
+				//fmt.Println("USE ACTION FOR WAITING TRANSACTION")
 				switch {
 				case action.Arguments[0] == 0:
 					UseBlock(S, tr, waitingTime, action.Arguments[1])
@@ -135,7 +136,7 @@ func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[
 				}
 				S.RemoveFromWaitlist(tr)
 				// GEBUG PRINT
-				fmt.Println("WAITING TIME: ", waitingTime)
+				//fmt.Println("WAITING TIME: ", waitingTime)
 			}
 		}
 	}
@@ -143,6 +144,34 @@ func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[
 }
 
 func main() {
+	duration := 24.0
+	if len(os.Args) != 1 {
+		helpString := fmt.Sprint(fmt.Sprintf("usage: %s [-h] [-d DURATION]\n\n", filepath.Base(os.Args[0])),
+			"Crossing Loop Simulation\n\n",
+			"optional arguments:\n",
+			"  -h, --help\t show this help message and exit\n",
+			"  -d DURATION, --duration DURATION\t set simulation duration in hours")
+		for i := 1; i < len(os.Args); i++ {
+			key := os.Args[i]
+			switch {
+			case key == "-h" || key == "--help":
+				fmt.Println(helpString)
+				os.Exit(1)
+			case key == "-d" || key == "--duration":
+				if f, err := strconv.ParseFloat(os.Args[i+1], 64); err != nil {
+					fmt.Println(err)
+					fmt.Println(helpString)
+					os.Exit(1)
+				} else {
+					duration = f
+					i++
+				}
+			default:
+				fmt.Println(helpString)
+				os.Exit(1)
+			}
+		}
+	}
 
 	// Init section
 
@@ -150,7 +179,7 @@ func main() {
 		Station: sim.Pair{35, 55},
 		AC:      sim.Pair{12, 18},
 		BC:      sim.Pair{17, 23},
-		Timer:   sim.Pair{3 * 60, 3 * 60}}
+		Timer:   sim.Pair{duration * 60, duration * 60}}
 
 	checks := map[transaction.Points][]int{
 		transaction.Points{Point0, PointA}:   []int{PointAC, PointCm, PointCr},

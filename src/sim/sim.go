@@ -121,7 +121,7 @@ func (s *Sim) RemoveFromWaitlist(Tr *transaction.Transaction) int {
 
 // Set next point for transaction, release and seize point.
 func (s *Sim) UsePoint(Tr *transaction.Transaction, NextTime float64, NextPoint int) error {
-	fmt.Println("GEBUG PRINT FOR USE: ", Tr)
+	//fmt.Println("GEBUG PRINT IN USE: ", Tr)
 	points := transaction.GetPoints(*Tr)
 	if err := s.ReleasePoint(points.Current); err != nil {
 		return err
@@ -130,7 +130,7 @@ func (s *Sim) UsePoint(Tr *transaction.Transaction, NextTime float64, NextPoint 
 		return err
 	}
 	Tr.CorrectTime(NextTime, NextPoint)
-	fmt.Println("GEBUG PRINT FOR USE BEFORE COR: ", Tr)
+	//fmt.Println("GEBUG PRINT IN USE BEFORE COR: ", Tr)
 	if err := s.fec.Insert(Tr); err != nil {
 		return err
 	}
