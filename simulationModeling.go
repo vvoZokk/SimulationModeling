@@ -51,7 +51,10 @@ func GenerateUniform(S *sim.Sim, R *rand.Rand, Limits sim.Pair, PointList []int)
 			fmt.Println(err)
 			os.Exit(1)
 		} else {
-			S.Generate(S.GetSimTime()+time, point)
+			S.Generate(time, point)
+			if point != ClockPoint {
+				S.AddStatistic(Point0, time)
+			}
 		}
 	}
 }
@@ -100,6 +103,7 @@ func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[
 						os.Exit(1)
 					} else {
 						UseBlock(S, tr, time, action.Arguments[1])
+						S.AddStatistic(points.Next, time)
 					}
 				}
 			}
@@ -132,15 +136,22 @@ func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[
 						os.Exit(1)
 					} else {
 						UseBlock(S, tr, waitingTime+time, action.Arguments[1])
+						S.AddStatistic(points.Next, time)
 					}
 				}
 				S.RemoveFromWaitlist(tr)
+				if waitingTime != 0 {
+					if points.Current == Point0 {
+						S.AddStatistic(points.Next, waitingTime)
+					} else {
+						S.AddStatistic(points.Current, waitingTime)
+					}
+				}
 				// GEBUG PRINT
 				//fmt.Println("WAITING TIME: ", waitingTime)
 			}
 		}
 	}
-
 }
 
 func main() {
@@ -193,7 +204,7 @@ func main() {
 	}
 
 	transfers := map[Checks][]Action{
-		{Point0, PointA, false}:   []Action{Action{Wait, []int{}}},                                                    // >A****C****B
+		{Point0, PointA, false}:   []Action{Action{Wait, []int{}}, Action{Generate, []int{Station, PointA}}},          // >A****C****B
 		{Point0, PointA, true}:    []Action{Action{Use, []int{0, PointAC}}, Action{Generate, []int{Station, PointA}}}, // >A****C****B
 		{PointA, PointAC, false}:  []Action{Action{Use, []int{AC, PointCr}}},                                          // A>***Cr****B
 		{PointA, PointAC, true}:   []Action{Action{Use, []int{AC, PointCm}}},                                          // A>***Cm****B
@@ -205,7 +216,7 @@ func main() {
 		{PointCr, PointBC, true}:  []Action{Action{Use, []int{BC, PointB}}},                                           // A****Cr>***B
 		{PointBC, PointB, true}:   []Action{Action{Use, []int{0, Point0}}},                                            // A****C***->B
 
-		{Point0, PointB, false}:   []Action{Action{Wait, []int{}}},                                                    // A****C****B<
+		{Point0, PointB, false}:   []Action{Action{Wait, []int{}}, Action{Generate, []int{Station, PointB}}},          // A****C****B<
 		{Point0, PointB, true}:    []Action{Action{Use, []int{0, PointBC}}, Action{Generate, []int{Station, PointB}}}, // A****C****B<
 		{PointB, PointBC, false}:  []Action{Action{Use, []int{BC, PointCr}}},                                          // A****Cr***<B
 		{PointB, PointBC, true}:   []Action{Action{Use, []int{BC, PointCm}}},                                          // A****Cm***<B
@@ -228,10 +239,56 @@ func main() {
 
 	GenerateUniform(CLSim, rand, timings[Timer], []int{ClockPoint})
 	GenerateUniform(CLSim, rand, timings[Station], []int{PointA, PointB})
-	fmt.Println(CLSim)
+
 	for !CLSim.IsFinish() {
 		Phase(CLSim, rand, timings, checks, transfers)
-		fmt.Println(CLSim)
+		//fmt.Println(CLSim)
 	}
 
+	// Get statistic
+
+	fmt.Println("Crossing loop simulation statistic")
+	fmt.Printf("Duration: %.0f minutes\n", duration*60)
+	if meanTime, _, err := CLSim.GetStatistic(PointA); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	} else {
+		fmt.Printf("Mean waiting time on station A: %.2f\n", meanTime)
+	}
+
+	if meanTime, _, err := CLSim.GetStatistic(PointB); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	} else {
+		fmt.Printf("Mean waiting time on station B: %.2f\n", meanTime)
+	}
+
+	var waitingTime float64
+	if meanTime, _, err := CLSim.GetStatistic(PointCm); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	} else {
+		waitingTime = meanTime
+	}
+	if meanTime, _, err := CLSim.GetStatistic(PointCr); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	} else {
+		waitingTime += meanTime
+	}
+	fmt.Printf("Mean waiting time on crossing: %.2f\n", waitingTime/2)
+
+	if _, sumTime, err := CLSim.GetStatistic(PointAC); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	} else {
+		fmt.Printf("Utilization ratio for AC track: %.2f\n", sumTime/(duration*60))
+	}
+
+	if _, sumTime, err := CLSim.GetStatistic(PointBC); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	} else {
+		fmt.Printf("Utilization ratio for BC track: %.2f\n", sumTime/(duration*60))
+	}
 }

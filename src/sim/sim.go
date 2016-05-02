@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"statistic"
 	"transaction"
 )
 
@@ -19,17 +20,25 @@ type Pair struct {
 }
 
 type Sim struct {
-	points      int
-	pointState  []int
-	idCounter   int
-	simTime     float64
-	fec         *chain.EventChain
-	waitingList []*transaction.Transaction
-	finish      bool
+	points         int
+	pointState     []int
+	idCounter      int
+	simTime        float64
+	fec            *chain.EventChain
+	pointStatistic []statistic.Unit
+	waitingList    []*transaction.Transaction
+	finish         bool
 }
 
 func New(Points int) *Sim {
-	return &Sim{Points, make([]int, Points), 0, 0.0, chain.New("FEC"), make([]*transaction.Transaction, 0, 10), true}
+	return &Sim{Points,
+		make([]int, Points),
+		0,
+		0.0,
+		chain.New("FEC"),
+		make([]statistic.Unit, Points),
+		make([]*transaction.Transaction, 0, 10),
+		true}
 }
 
 func (s *Sim) Init() {
@@ -37,7 +46,7 @@ func (s *Sim) Init() {
 		s.pointState[i] = NUsed
 	}
 	s.finish = false
-	fmt.Println(">> Simulator initialization")
+	fmt.Println("> Simulation initialization")
 }
 
 // GENERATE block.
@@ -160,19 +169,45 @@ func (s *Sim) Extraction() ([]*transaction.Transaction, error) {
 	}
 }
 
+// Get waitlist.
+func (s *Sim) GetWaitlist() []*transaction.Transaction {
+	return s.waitingList
+}
+
+// Add new statistic value for point.
+func (s *Sim) AddStatistic(Point int, Value float64) error {
+	if Point < s.points {
+		s.pointStatistic[Point].AddValue(Value)
+		return nil
+	} else {
+		return errors.New("incorrect point's id in Sim.Seize")
+	}
+}
+
+// Get statistic for point.
+func (s *Sim) GetStatistic(Point int) (float64, float64, error) {
+	if Point < s.points {
+		return s.pointStatistic[Point].GetMean(), s.pointStatistic[Point].GetSum(), nil
+	} else {
+		return 0.0, 0.0, errors.New("incorrect point's id in Sim.Seize")
+	}
+}
+
 // Check end of simulation.
 func (s *Sim) IsFinish() bool {
+	if s.finish {
+		fmt.Println("> Simulation end")
+	}
 	return s.finish
 }
 
 // Print simulation info.
 func (s *Sim) String() string {
-	return fmt.Sprintf(">>> Simulation time: %f, total transaction: %d, trancsaction in FEC: %d", s.simTime, s.idCounter, s.fec.Len()) + "\n" + fmt.Sprint(s.fec)
-}
-
-// Get waitlist.
-func (s *Sim) GetWaitlist() []*transaction.Transaction {
-	return s.waitingList
+	if len(s.waitingList) != 0 {
+		return fmt.Sprintf("> Simulation time: %.1f, total transaction: %d, in FEC: %d, in waitlist: %d", s.simTime, s.idCounter, s.fec.Len(), len(s.waitingList))
+	} else {
+		return fmt.Sprintf("> Simulation time: %.1f, total transaction: %d, in FEC: %d", s.simTime, s.idCounter, s.fec.Len())
+	}
 }
 
 // Get uniformly distributed random number.
