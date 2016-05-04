@@ -1,0 +1,7 @@
+Crossing loop simulation statistic
+Duration: 1440 minutes
+Mean waiting time on station A: 0.00
+Mean waiting time on station B: 11.23
+Mean waiting time on crossing: 5.85
+Utilization ratio for AC track: 0.66
+Utilization ratio for BC track: 0.87

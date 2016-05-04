@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"math/rand"
 	"os"
@@ -156,19 +157,26 @@ func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[
 
 func main() {
 	duration := 24.0
+	outFile := os.Stdout
+	defer outFile.Close()
 	if len(os.Args) != 1 {
-		helpString := fmt.Sprint(fmt.Sprintf("usage: %s [-h] [-d DURATION]\n\n", filepath.Base(os.Args[0])),
+		helpString := fmt.Sprint(fmt.Sprintf("usage: %s [-h] [-o FILE] [-d DURATION]\n\n", filepath.Base(os.Args[0])),
 			"Crossing Loop Simulation\n\n",
 			"optional arguments:\n",
 			"  -h, --help\t show this help message and exit\n",
-			"  -d DURATION, --duration DURATION\t set simulation duration in hours")
+			"  -o FILE\t write output to FILE\n",
+			"  -d DURATION\t set simulation duration in hours (default: 24)")
 		for i := 1; i < len(os.Args); i++ {
 			key := os.Args[i]
 			switch {
 			case key == "-h" || key == "--help":
 				fmt.Println(helpString)
 				os.Exit(1)
-			case key == "-d" || key == "--duration":
+			case key == "-d":
+				if i+1 == len(os.Args) {
+					fmt.Println(helpString)
+					os.Exit(1)
+				}
 				if f, err := strconv.ParseFloat(os.Args[i+1], 64); err != nil {
 					fmt.Println(err)
 					fmt.Println(helpString)
@@ -177,6 +185,21 @@ func main() {
 					duration = f
 					i++
 				}
+			case key == "-o":
+				if i+1 == len(os.Args) {
+					fmt.Println(helpString)
+					os.Exit(1)
+				}
+				fileName := os.Args[i+1]
+				if file, err := os.Create(fileName); err != nil {
+					fmt.Println(err)
+					fmt.Println(helpString)
+					os.Exit(1)
+				} else {
+					outFile = file
+					i++
+				}
+
 			default:
 				fmt.Println(helpString)
 				os.Exit(1)
@@ -230,6 +253,7 @@ func main() {
 
 		{Point0, ClockPoint, true}: []Action{Action{Terminate, []int{}}}, // Clock
 	}
+	writer := bufio.NewWriter(outFile)
 
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	CLSim := sim.New(Points)
@@ -247,20 +271,20 @@ func main() {
 
 	// Get statistic
 
-	fmt.Println("Crossing loop simulation statistic")
-	fmt.Printf("Duration: %.0f minutes\n", duration*60)
+	_, errors := writer.WriteString("Crossing loop simulation statistic\n")
+	_, errors = writer.WriteString(fmt.Sprintf("Duration: %.0f minutes\n", duration*60))
 	if meanTime, _, err := CLSim.GetStatistic(PointA); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	} else {
-		fmt.Printf("Mean waiting time on station A: %.2f\n", meanTime)
+		_, errors = writer.WriteString(fmt.Sprintf("Mean waiting time on station A: %.2f\n", meanTime))
 	}
 
 	if meanTime, _, err := CLSim.GetStatistic(PointB); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	} else {
-		fmt.Printf("Mean waiting time on station B: %.2f\n", meanTime)
+		_, errors = writer.WriteString(fmt.Sprintf("Mean waiting time on station B: %.2f\n", meanTime))
 	}
 
 	var waitingTime float64
@@ -276,19 +300,25 @@ func main() {
 	} else {
 		waitingTime += meanTime
 	}
-	fmt.Printf("Mean waiting time on crossing: %.2f\n", waitingTime/2)
+	_, errors = writer.WriteString(fmt.Sprintf("Mean waiting time on crossing: %.2f\n", waitingTime/2))
 
 	if _, sumTime, err := CLSim.GetStatistic(PointAC); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	} else {
-		fmt.Printf("Utilization ratio for AC track: %.2f\n", sumTime/(duration*60))
+		_, errors = writer.WriteString(fmt.Sprintf("Utilization ratio for AC track: %.2f\n", sumTime/(duration*60)))
 	}
 
 	if _, sumTime, err := CLSim.GetStatistic(PointBC); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	} else {
-		fmt.Printf("Utilization ratio for BC track: %.2f\n", sumTime/(duration*60))
+		_, errors = writer.WriteString(fmt.Sprintf("Utilization ratio for BC track: %.2f\n", sumTime/(duration*60)))
+	}
+
+	errors = writer.Flush()
+	if errors != nil {
+		fmt.Println(errors)
+		os.Exit(1)
 	}
 }
