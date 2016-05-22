@@ -155,6 +155,33 @@ func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[
 	}
 }
 
+func WriteData(Writer *bufio.Writer, Data string) {
+	if _, err := Writer.WriteString(Data); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func GetMeanTime(S *sim.Sim, Point int) float64 {
+	if meanTime, _, err := S.GetStatistic(Point); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	} else {
+		return meanTime
+	}
+	return 0.0
+}
+
+func GetSumTime(S *sim.Sim, Point int) float64 {
+	if _, sumTime, err := S.GetStatistic(Point); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	} else {
+		return sumTime
+	}
+	return 0.0
+}
+
 func main() {
 	duration := 24.0
 	outFile := os.Stdout
@@ -271,54 +298,19 @@ func main() {
 
 	// Get statistic
 
-	_, errors := writer.WriteString("Crossing loop simulation statistic\n")
-	_, errors = writer.WriteString(fmt.Sprintf("Duration: %.0f minutes\n", duration*60))
-	if meanTime, _, err := CLSim.GetStatistic(PointA); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	} else {
-		_, errors = writer.WriteString(fmt.Sprintf("Mean waiting time on station A: %.2f\n", meanTime))
-	}
+	WriteData(writer, "Crossing loop simulation statistic\n")
+	WriteData(writer, fmt.Sprintf("Duration: %.0f minutes\n", duration*60))
+	WriteData(writer, fmt.Sprintf("Mean waiting time on station A: %.2f\n", GetMeanTime(CLSim, PointA)))
+	WriteData(writer, fmt.Sprintf("Mean waiting time on station B: %.2f\n", GetMeanTime(CLSim, PointB)))
+	waitingTime := GetMeanTime(CLSim, PointCm)
+	waitingTime += GetMeanTime(CLSim, PointCr)
+	WriteData(writer, fmt.Sprintf("Mean waiting time on crossing: %.2f\n", waitingTime/2))
+	WriteData(writer, fmt.Sprintf("Utilization ratio for AC track: %.2f\n", GetSumTime(CLSim, PointAC)/(duration*60)))
+	WriteData(writer, fmt.Sprintf("Utilization ratio for BC track: %.2f\n", GetSumTime(CLSim, PointBC)/(duration*60)))
 
-	if meanTime, _, err := CLSim.GetStatistic(PointB); err != nil {
+	err := writer.Flush()
+	if err != nil {
 		fmt.Println(err)
-		os.Exit(1)
-	} else {
-		_, errors = writer.WriteString(fmt.Sprintf("Mean waiting time on station B: %.2f\n", meanTime))
-	}
-
-	var waitingTime float64
-	if meanTime, _, err := CLSim.GetStatistic(PointCm); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	} else {
-		waitingTime = meanTime
-	}
-	if meanTime, _, err := CLSim.GetStatistic(PointCr); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	} else {
-		waitingTime += meanTime
-	}
-	_, errors = writer.WriteString(fmt.Sprintf("Mean waiting time on crossing: %.2f\n", waitingTime/2))
-
-	if _, sumTime, err := CLSim.GetStatistic(PointAC); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	} else {
-		_, errors = writer.WriteString(fmt.Sprintf("Utilization ratio for AC track: %.2f\n", sumTime/(duration*60)))
-	}
-
-	if _, sumTime, err := CLSim.GetStatistic(PointBC); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	} else {
-		_, errors = writer.WriteString(fmt.Sprintf("Utilization ratio for BC track: %.2f\n", sumTime/(duration*60)))
-	}
-
-	errors = writer.Flush()
-	if errors != nil {
-		fmt.Println(errors)
 		os.Exit(1)
 	}
 }
