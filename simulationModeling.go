@@ -49,7 +49,7 @@ type Action struct {
 func GenerateUniform(S *sim.Sim, R *rand.Rand, Limits sim.Pair, PointList []int) {
 	for _, point := range PointList {
 		if time, err := sim.Uniform(R, Limits); err != nil {
-			fmt.Println(err)
+			fmt.Println(err, S.DebugString())
 			os.Exit(1)
 		} else {
 			S.Generate(time, point)
@@ -62,7 +62,7 @@ func GenerateUniform(S *sim.Sim, R *rand.Rand, Limits sim.Pair, PointList []int)
 
 func UseBlock(S *sim.Sim, Tr *transaction.Transaction, Time float64, NextPoint int) {
 	if err := S.UsePoint(Tr, Time, NextPoint); err != nil {
-		fmt.Println(err)
+		fmt.Println(err, S.DebugString())
 		os.Exit(1)
 	}
 }
@@ -70,14 +70,14 @@ func UseBlock(S *sim.Sim, Tr *transaction.Transaction, Time float64, NextPoint i
 func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[transaction.Points][]int, RoadMap map[Checks][]Action) {
 	cec, err := S.Extraction()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(err, S.DebugString())
 		os.Exit(1)
 	}
 	for _, tr := range cec {
 		points := transaction.GetPoints(*tr)
 		check, err := S.Test(CheckTable[points])
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println(err, S.DebugString())
 			os.Exit(1)
 		}
 		actions := RoadMap[Checks{points.Current, points.Next, check}]
@@ -100,7 +100,7 @@ func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[
 					UseBlock(S, tr, 0.0, action.Arguments[1])
 				default:
 					if time, err := sim.Uniform(R, TimeTable[action.Arguments[0]]); err != nil {
-						fmt.Println(err)
+						fmt.Println(err, S.DebugString())
 						os.Exit(1)
 					} else {
 						UseBlock(S, tr, time, action.Arguments[1])
@@ -115,32 +115,33 @@ func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[
 			}
 		}
 	}
-	for _, tr := range S.GetWaitlist() {
-		points := transaction.GetPoints(*tr)
+	for i := 0; i < len(S.GetWaitlist()); i++ {
+		waitList := S.GetWaitlist()
+		points := transaction.GetPoints(*waitList[i])
 		check, err := S.Test(CheckTable[points])
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println(err, S.DebugString())
 			os.Exit(1)
 		}
 		actions := RoadMap[Checks{points.Current, points.Next, check}]
 		for _, action := range actions {
-			waitingTime := S.GetSimTime() - transaction.GetTime(*tr)
+			waitingTime := S.GetSimTime() - transaction.GetTime(*waitList[i])
 			if action.Type == Use {
 				// GEBUG PRINT
 				//fmt.Println("USE ACTION FOR WAITING TRANSACTION")
 				switch {
 				case action.Arguments[0] == 0:
-					UseBlock(S, tr, waitingTime, action.Arguments[1])
+					UseBlock(S, waitList[i], waitingTime, action.Arguments[1])
 				default:
 					if time, err := sim.Uniform(R, TimeTable[action.Arguments[0]]); err != nil {
-						fmt.Println(err)
+						fmt.Println(err, S.DebugString())
 						os.Exit(1)
 					} else {
-						UseBlock(S, tr, waitingTime+time, action.Arguments[1])
+						UseBlock(S, waitList[i], waitingTime+time, action.Arguments[1])
 						S.AddStatistic(points.Next, time)
 					}
 				}
-				S.RemoveFromWaitlist(tr)
+				S.RemoveFromWaitlist(waitList[i])
 				if waitingTime != 0 {
 					if points.Current == Point0 {
 						S.AddStatistic(points.Next, waitingTime)
@@ -164,7 +165,7 @@ func WriteData(Writer *bufio.Writer, Data string) {
 
 func GetMeanTime(S *sim.Sim, Point int) float64 {
 	if meanTime, _, err := S.GetStatistic(Point); err != nil {
-		fmt.Println(err)
+		fmt.Println(err, S.DebugString())
 		os.Exit(1)
 	} else {
 		return meanTime
@@ -174,7 +175,7 @@ func GetMeanTime(S *sim.Sim, Point int) float64 {
 
 func GetSumTime(S *sim.Sim, Point int) float64 {
 	if _, sumTime, err := S.GetStatistic(Point); err != nil {
-		fmt.Println(err)
+		fmt.Println(err, S.DebugString())
 		os.Exit(1)
 	} else {
 		return sumTime

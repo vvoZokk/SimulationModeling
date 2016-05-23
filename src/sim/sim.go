@@ -139,7 +139,7 @@ func (s *Sim) UsePoint(Tr *transaction.Transaction, NextTime float64, NextPoint 
 		return err
 	}
 	Tr.CorrectTime(NextTime, NextPoint)
-	//fmt.Println("GEBUG PRINT IN USE BEFORE COR: ", Tr)
+	//fmt.Println("GEBUG PRINT IN USE BEFORE CORRECTION: ", Tr)
 	if err := s.fec.Insert(Tr); err != nil {
 		return err
 	}
@@ -208,6 +208,21 @@ func (s *Sim) String() string {
 	} else {
 		return fmt.Sprintf("> Simulation time: %.1f, total transaction: %d, in FEC: %d", s.simTime, s.idCounter, s.fec.Len())
 	}
+}
+
+func (s *Sim) DebugString() string {
+	log := "\nSIM DEBUG\n"
+	log += fmt.Sprintf("SIM TIME: %.1f, TRANSACTION: TOTAL %d, IN FEC %d, IN WAITLIST %d\n",
+		s.simTime,
+		s.idCounter,
+		s.fec.Len(),
+		len(s.waitingList))
+	log += fmt.Sprintln(s.fec)
+	log += fmt.Sprintf("WAITLIST, LENGTH: %d\n", len(s.waitingList))
+	for _, tr := range s.waitingList {
+		log += fmt.Sprintf("\t%s\n", tr)
+	}
+	return log
 }
 
 // Get uniformly distributed random number.
