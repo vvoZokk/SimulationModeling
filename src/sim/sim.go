@@ -1,24 +1,28 @@
+// Package sim implements simulator and general operations for simulation modeling.
 package sim
 
 import (
-	"chain"
 	"errors"
 	"fmt"
 	"math/rand"
-	"statistic"
-	"transaction"
+	"sim/chain"
+	"sim/statistic"
+	"sim/transaction"
 )
 
+// List of supported states of points.
 const (
 	NAvailable = iota
 	NUsed
 	Used
 )
 
+// One pair of float64 numbers for generating random value.
 type Pair struct {
 	Left, Right float64
 }
 
+// Simulator.
 type Sim struct {
 	points         int
 	pointState     []int
@@ -30,6 +34,9 @@ type Sim struct {
 	finish         bool
 }
 
+// New returns new simulator by specified number of points.
+// Simulator has a future event chain, a slice of statistic unit for each point and a waitlist of transactions.
+// Waitlist is slice with length 0 and capacity 10.
 func New(Points int) *Sim {
 	return &Sim{Points,
 		make([]int, Points),
@@ -41,6 +48,7 @@ func New(Points int) *Sim {
 		true}
 }
 
+// Init makes initiation of simulator.
 func (s *Sim) Init() {
 	for i, _ := range s.pointState {
 		s.pointState[i] = NUsed
@@ -49,18 +57,18 @@ func (s *Sim) Init() {
 	fmt.Println("> Simulation initialization")
 }
 
-// GENERATE block.
+// Generate creates new transaction in simulator by target waypoint.
 func (s *Sim) Generate(NextTime float64, TargetPoint int) error {
 	s.idCounter++
 	return s.fec.Insert(transaction.New(s.idCounter, s.simTime+NextTime, TargetPoint))
 }
 
-// ADVANCE block.
+// Advance moves transaction to next waypoint by specified time.
 func (s *Sim) Advance(Tr *transaction.Transaction, NextTime float64, NextPoint int) {
 	Tr.CorrectTime(NextTime, NextPoint)
 }
 
-// GATE and TEST block (check point's state).
+// Test returns result of check of state of point.
 func (s *Sim) Test(List []int) (bool, error) {
 	for _, point := range List {
 		if !(point < s.points) {
@@ -73,7 +81,7 @@ func (s *Sim) Test(List []int) (bool, error) {
 	return true, nil
 }
 
-// SEIZE block.
+// SeizePoint sets "Used" state of point.
 func (s *Sim) SeizePoint(Point int) error {
 	if Point < s.points {
 		if s.pointState[Point] != NAvailable {
@@ -87,7 +95,7 @@ func (s *Sim) SeizePoint(Point int) error {
 	}
 }
 
-// RELEASE block.
+// SeizePoint sets "NUsed" state of point.
 func (s *Sim) ReleasePoint(Point int) error {
 	if Point < s.points {
 		if s.pointState[Point] != NAvailable {
@@ -101,18 +109,18 @@ func (s *Sim) ReleasePoint(Point int) error {
 	}
 }
 
-// TERMINATE block.
+// Terminate completes simulation.
 func (s *Sim) Terminate() {
 	s.finish = true
 }
 
-// Add to waitlist.
+// AddToWaitlist adds transaction to waitlist.
 func (s *Sim) AddToWaitlist(Tr *transaction.Transaction) int {
 	s.waitingList = append(s.waitingList, Tr)
 	return len(s.waitingList)
 }
 
-// Remove from waitlist.
+// RemoveFromWaitlist removes transaction from waitlist.
 func (s *Sim) RemoveFromWaitlist(Tr *transaction.Transaction) int {
 	number, check := 0, false
 	for i := 0; i < len(s.waitingList); i++ {
@@ -128,7 +136,7 @@ func (s *Sim) RemoveFromWaitlist(Tr *transaction.Transaction) int {
 	return len(s.waitingList)
 }
 
-// Set next point for transaction, release and seize point.
+// UsePoint releases current, seizes next waypoint and sets next waypoint for transaction,
 func (s *Sim) UsePoint(Tr *transaction.Transaction, NextTime float64, NextPoint int) error {
 	//fmt.Println("GEBUG PRINT IN USE: ", Tr)
 	points := transaction.GetPoints(*Tr)
@@ -146,12 +154,12 @@ func (s *Sim) UsePoint(Tr *transaction.Transaction, NextTime float64, NextPoint 
 	return nil
 }
 
-// Get current sumulation time.
+// GetSimTime returns current value of sumulation timer.
 func (s *Sim) GetSimTime() float64 {
 	return s.simTime
 }
 
-// Correct simulation time.
+// CorrectTime changes simulation timer by specified value.
 func (s *Sim) CorrectTime(NewTime float64) error {
 	if s.simTime = NewTime; s.simTime == 0 {
 		return errors.New("simulation not started")
@@ -159,7 +167,7 @@ func (s *Sim) CorrectTime(NewTime float64) error {
 	return nil
 }
 
-// Get current events chain.
+// Extraction returns current events chain.
 func (s *Sim) Extraction() ([]*transaction.Transaction, error) {
 	if cec, err := s.fec.GetHead(); err != nil {
 		return nil, err
@@ -169,12 +177,12 @@ func (s *Sim) Extraction() ([]*transaction.Transaction, error) {
 	}
 }
 
-// Get waitlist.
+// GetWaitlist returns waitlist.
 func (s *Sim) GetWaitlist() []*transaction.Transaction {
 	return s.waitingList
 }
 
-// Add new statistic value for point.
+// AddStatistic adds new statistic value for point.
 func (s *Sim) AddStatistic(Point int, Value float64) error {
 	if Point < s.points {
 		s.pointStatistic[Point].AddValue(Value)
@@ -184,7 +192,7 @@ func (s *Sim) AddStatistic(Point int, Value float64) error {
 	}
 }
 
-// Get statistic for point.
+// GetStatistic returns mean and summary values of statistic for point.
 func (s *Sim) GetStatistic(Point int) (float64, float64, error) {
 	if Point < s.points {
 		return s.pointStatistic[Point].GetMean(), s.pointStatistic[Point].GetSum(), nil
@@ -193,7 +201,7 @@ func (s *Sim) GetStatistic(Point int) (float64, float64, error) {
 	}
 }
 
-// Check end of simulation.
+// IsFinish returns result of check of ending.
 func (s *Sim) IsFinish() bool {
 	if s.finish {
 		fmt.Println("> Simulation end")
@@ -201,7 +209,7 @@ func (s *Sim) IsFinish() bool {
 	return s.finish
 }
 
-// Print simulation info.
+// String returns information about current state of simulation.
 func (s *Sim) String() string {
 	if len(s.waitingList) != 0 {
 		return fmt.Sprintf("> Simulation time: %.1f, total transaction: %d, in FEC: %d, in waitlist: %d", s.simTime, s.idCounter, s.fec.Len(), len(s.waitingList))
@@ -210,6 +218,7 @@ func (s *Sim) String() string {
 	}
 }
 
+// DebugString returns detailed information about simulation.
 func (s *Sim) DebugString() string {
 	log := "\nSIM DEBUG\n"
 	log += fmt.Sprintf("SIM TIME: %.1f, TRANSACTION: TOTAL %d, IN FEC %d, IN WAITLIST %d\n",
@@ -225,7 +234,7 @@ func (s *Sim) DebugString() string {
 	return log
 }
 
-// Get uniformly distributed random number.
+// Uniform returns uniformly distributed random number between specified limits.
 func Uniform(R *rand.Rand, Limits Pair) (float64, error) {
 	if Limits.Left > Limits.Right {
 		return 0.0, errors.New(fmt.Sprintf("incorrect limits in Uniform: (%f, %f)", Limits.Left, Limits.Right))

@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"sim"
+	"sim/transaction"
 	"strconv"
 	"time"
-	"transaction"
 )
 
 const Points = 8

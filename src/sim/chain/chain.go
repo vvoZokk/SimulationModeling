@@ -1,22 +1,26 @@
+// Package chain implements sorted event chain for simulation modeling.
 package chain
 
 import (
 	"errors"
 	"fmt"
+	"sim/transaction"
 	"sort"
-	"transaction"
 )
 
+// Sorted event chain.
 type EventChain struct {
 	chain []*transaction.Transaction
 	name  string
 }
 
+// New returns a new sorted event chain by specified name.
+// Slice of transactions has length 0 and capacity 20.
 func New(Name string) *EventChain {
 	return &EventChain{make([]*transaction.Transaction, 0, 20), Name}
 }
 
-// Insert new transaction in sorted chain.
+// Insert adds new transaction in sorted chain.
 func (ch *EventChain) Insert(Tr *transaction.Transaction) error {
 	if ch.Len() == 0 {
 		ch.chain = append(ch.chain, Tr)
@@ -34,22 +38,22 @@ func (ch *EventChain) Insert(Tr *transaction.Transaction) error {
 	}
 }
 
-// Get chain length for sort.Interface.
+// Len returns length of chain.
 func (ch EventChain) Len() int {
 	return len(ch.chain)
 }
 
-// Less function for sort.Interface.
+// Less returns result of comparison two elements of chain.
 func (ch EventChain) Less(i, j int) bool {
 	return transaction.GetTime(*ch.chain[i]) < transaction.GetTime(*ch.chain[j])
 }
 
-// Swap function for sort.Interface.
+// Swap swaps two elements of chain.
 func (ch EventChain) Swap(i, j int) {
 	ch.chain[i], ch.chain[j] = ch.chain[j], ch.chain[i]
 }
 
-// Print debug chain info.
+// String returns information about chain.
 func (ch EventChain) String() string {
 	string := fmt.Sprintf("CHAIN \"%s\", LENGTH: %d, SORTED: %t] \n", ch.name, ch.Len(), sort.IsSorted(ch))
 	for i := 0; i < ch.Len(); i++ {
@@ -58,7 +62,7 @@ func (ch EventChain) String() string {
 	return string
 }
 
-// Get slice of transaction with earliest time parameter.
+// GetHead returns slice of transaction with least value of timer.
 func (ch *EventChain) GetHead() ([]*transaction.Transaction, error) {
 	length := len(ch.chain)
 	if length == 0 {
