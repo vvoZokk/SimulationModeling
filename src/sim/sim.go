@@ -37,13 +37,13 @@ type Sim struct {
 // New returns new simulator by specified number of points.
 // Simulator has a future event chain, a slice of statistic unit for each point and a waitlist of transactions.
 // Waitlist is slice with length 0 and capacity 10.
-func New(Points int) *Sim {
-	return &Sim{Points,
-		make([]int, Points),
+func New(points int) *Sim {
+	return &Sim{points,
+		make([]int, points),
 		0,
 		0.0,
 		chain.New("FEC"),
-		make([]statistic.Unit, Points),
+		make([]statistic.Unit, points),
 		make([]*transaction.Transaction, 0, 10),
 		true}
 }
@@ -58,19 +58,19 @@ func (s *Sim) Init() {
 }
 
 // Generate creates new transaction in simulator by target waypoint.
-func (s *Sim) Generate(NextTime float64, TargetPoint int) error {
+func (s *Sim) Generate(nextTime float64, targetPoint int) error {
 	s.idCounter++
-	return s.fec.Insert(transaction.New(s.idCounter, s.simTime+NextTime, TargetPoint))
+	return s.fec.Insert(transaction.New(s.idCounter, s.simTime+nextTime, targetPoint))
 }
 
 // Advance moves transaction to next waypoint by specified time.
-func (s *Sim) Advance(Tr *transaction.Transaction, NextTime float64, NextPoint int) {
-	Tr.CorrectTime(NextTime, NextPoint)
+func (s *Sim) Advance(tr *transaction.Transaction, nextTime float64, nextPoint int) {
+	tr.CorrectTime(nextTime, nextPoint)
 }
 
 // Test returns result of check of state of point.
-func (s *Sim) Test(List []int) (bool, error) {
-	for _, point := range List {
+func (s *Sim) Test(listOfPoint []int) (bool, error) {
+	for _, point := range listOfPoint {
 		if !(point < s.points) {
 			return false, errors.New("incorrect point's id in Sim.Test")
 		}
@@ -82,30 +82,30 @@ func (s *Sim) Test(List []int) (bool, error) {
 }
 
 // SeizePoint sets "Used" state of point.
-func (s *Sim) SeizePoint(Point int) error {
-	if Point < s.points {
-		if s.pointState[Point] != NAvailable {
-			s.pointState[Point] = Used
+func (s *Sim) SeizePoint(p int) error {
+	if p < s.points {
+		if s.pointState[p] != NAvailable {
+			s.pointState[p] = Used
 			return nil
 		} else {
-			return errors.New("point not available in Sim.Seize")
+			return errors.New("point not available in Sim.SeizePoint")
 		}
 	} else {
-		return errors.New("incorrect point's id in Sim.Seize")
+		return errors.New("incorrect point's id in Sim.SeizePoint")
 	}
 }
 
 // SeizePoint sets "NUsed" state of point.
-func (s *Sim) ReleasePoint(Point int) error {
-	if Point < s.points {
-		if s.pointState[Point] != NAvailable {
-			s.pointState[Point] = NUsed
+func (s *Sim) ReleasePoint(p int) error {
+	if p < s.points {
+		if s.pointState[p] != NAvailable {
+			s.pointState[p] = NUsed
 			return nil
 		} else {
-			return errors.New("point not available in Sim.Seize")
+			return errors.New("point not available in Sim.ReleasePoint")
 		}
 	} else {
-		return errors.New("incorrect point's id in Sim.Seize")
+		return errors.New("incorrect point's id in Sim.ReleasePoint")
 	}
 }
 
@@ -115,16 +115,16 @@ func (s *Sim) Terminate() {
 }
 
 // AddToWaitlist adds transaction to waitlist.
-func (s *Sim) AddToWaitlist(Tr *transaction.Transaction) int {
-	s.waitingList = append(s.waitingList, Tr)
+func (s *Sim) AddToWaitlist(tr *transaction.Transaction) int {
+	s.waitingList = append(s.waitingList, tr)
 	return len(s.waitingList)
 }
 
 // RemoveFromWaitlist removes transaction from waitlist.
-func (s *Sim) RemoveFromWaitlist(Tr *transaction.Transaction) int {
+func (s *Sim) RemoveFromWaitlist(tr *transaction.Transaction) int {
 	number, check := 0, false
 	for i := 0; i < len(s.waitingList); i++ {
-		if transaction.GetId(*s.waitingList[i]) == transaction.GetId(*Tr) {
+		if transaction.GetId(*s.waitingList[i]) == transaction.GetId(*tr) {
 			number = i
 			check = true
 			break
@@ -137,18 +137,18 @@ func (s *Sim) RemoveFromWaitlist(Tr *transaction.Transaction) int {
 }
 
 // UsePoint releases current, seizes next waypoint and sets next waypoint for transaction,
-func (s *Sim) UsePoint(Tr *transaction.Transaction, NextTime float64, NextPoint int) error {
+func (s *Sim) UsePoint(tr *transaction.Transaction, nextTime float64, nextPoint int) error {
 	//fmt.Println("GEBUG PRINT IN USE: ", Tr)
-	points := transaction.GetPoints(*Tr)
+	points := transaction.GetPoints(*tr)
 	if err := s.ReleasePoint(points.Current); err != nil {
 		return err
 	}
 	if err := s.SeizePoint(points.Next); err != nil {
 		return err
 	}
-	Tr.CorrectTime(NextTime, NextPoint)
+	tr.CorrectTime(nextTime, nextPoint)
 	//fmt.Println("GEBUG PRINT IN USE BEFORE CORRECTION: ", Tr)
-	if err := s.fec.Insert(Tr); err != nil {
+	if err := s.fec.Insert(tr); err != nil {
 		return err
 	}
 	return nil
@@ -160,8 +160,8 @@ func (s *Sim) GetSimTime() float64 {
 }
 
 // CorrectTime changes simulation timer by specified value.
-func (s *Sim) CorrectTime(NewTime float64) error {
-	if s.simTime = NewTime; s.simTime == 0 {
+func (s *Sim) CorrectTime(newTime float64) error {
+	if s.simTime = newTime; s.simTime == 0 {
 		return errors.New("simulation not started")
 	}
 	return nil
@@ -183,21 +183,21 @@ func (s *Sim) GetWaitlist() []*transaction.Transaction {
 }
 
 // AddStatistic adds new statistic value for point.
-func (s *Sim) AddStatistic(Point int, Value float64) error {
-	if Point < s.points {
-		s.pointStatistic[Point].AddValue(Value)
+func (s *Sim) AddStatistic(point int, value float64) error {
+	if point < s.points {
+		s.pointStatistic[point].AddValue(value)
 		return nil
 	} else {
-		return errors.New("incorrect point's id in Sim.Seize")
+		return errors.New("incorrect point's id in Sim.AddStatistic")
 	}
 }
 
 // GetStatistic returns mean and summary values of statistic for point.
-func (s *Sim) GetStatistic(Point int) (float64, float64, error) {
-	if Point < s.points {
-		return s.pointStatistic[Point].GetMean(), s.pointStatistic[Point].GetSum(), nil
+func (s *Sim) GetStatistic(point int) (float64, float64, error) {
+	if point < s.points {
+		return s.pointStatistic[point].Mean(), s.pointStatistic[point].Sum(), nil
 	} else {
-		return 0.0, 0.0, errors.New("incorrect point's id in Sim.Seize")
+		return 0.0, 0.0, errors.New("incorrect point's id in Sim.GetStatistic")
 	}
 }
 
@@ -235,10 +235,10 @@ func (s *Sim) DebugString() string {
 }
 
 // Uniform returns uniformly distributed random number between specified limits.
-func Uniform(R *rand.Rand, Limits Pair) (float64, error) {
-	if Limits.Left > Limits.Right {
-		return 0.0, errors.New(fmt.Sprintf("incorrect limits in Uniform: (%f, %f)", Limits.Left, Limits.Right))
+func Uniform(r *rand.Rand, limits Pair) (float64, error) {
+	if limits.Left > limits.Right {
+		return 0.0, errors.New(fmt.Sprintf("incorrect limits in Uniform: (%f, %f)", limits.Left, limits.Right))
 	} else {
-		return Limits.Left + R.Float64()*(Limits.Right-Limits.Left), nil
+		return limits.Left + r.Float64()*(limits.Right-limits.Left), nil
 	}
 }

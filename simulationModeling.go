@@ -67,7 +67,7 @@ func UseBlock(S *sim.Sim, Tr *transaction.Transaction, Time float64, NextPoint i
 	}
 }
 
-func Phase(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[transaction.Points][]int, RoadMap map[Checks][]Action) {
+func Phases(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[transaction.Points][]int, RoadMap map[Checks][]Action) {
 	cec, err := S.Extraction()
 	if err != nil {
 		fmt.Println(err, S.DebugString())
@@ -293,7 +293,7 @@ func main() {
 	GenerateUniform(CLSim, rand, timings[Station], []int{PointA, PointB})
 
 	for !CLSim.IsFinish() {
-		Phase(CLSim, rand, timings, checks, transfers)
+		Phases(CLSim, rand, timings, checks, transfers)
 		//fmt.Println(CLSim)
 	}
 

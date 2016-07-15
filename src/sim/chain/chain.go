@@ -16,19 +16,19 @@ type EventChain struct {
 
 // New returns a new sorted event chain by specified name.
 // Slice of transactions has length 0 and capacity 20.
-func New(Name string) *EventChain {
-	return &EventChain{make([]*transaction.Transaction, 0, 20), Name}
+func New(name string) *EventChain {
+	return &EventChain{make([]*transaction.Transaction, 0, 20), name}
 }
 
 // Insert adds new transaction in sorted chain.
-func (ch *EventChain) Insert(Tr *transaction.Transaction) error {
+func (ch *EventChain) Insert(tr *transaction.Transaction) error {
 	if ch.Len() == 0 {
-		ch.chain = append(ch.chain, Tr)
+		ch.chain = append(ch.chain, tr)
 	} else {
 		result := make([]*transaction.Transaction, len(ch.chain)+1)
-		position := sort.Search(ch.Len(), func(i int) bool { return transaction.GetTime(*ch.chain[i]) >= transaction.GetTime(*Tr) })
+		position := sort.Search(ch.Len(), func(i int) bool { return transaction.GetTime(*ch.chain[i]) >= transaction.GetTime(*tr) })
 
-		result = append(ch.chain[:position], append([]*transaction.Transaction{Tr}, ch.chain[position:]...)...)
+		result = append(ch.chain[:position], append([]*transaction.Transaction{tr}, ch.chain[position:]...)...)
 		ch.chain = result
 	}
 	if sort.IsSorted(ch) {

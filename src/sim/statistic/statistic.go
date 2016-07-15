@@ -7,14 +7,18 @@ type Unit struct {
 	count int
 }
 
+func new(sum float64, count int) *Unit {
+	return &Unit{sum, count}
+}
+
 // AddValue adds new value of unit.
-func (u *Unit) AddValue(Value float64) {
-	u.sum += Value
+func (u *Unit) AddValue(v float64) {
+	u.sum += v
 	u.count++
 }
 
-// GetMean returns mean value.
-func (u *Unit) GetMean() float64 {
+// Mean returns mean value.
+func (u *Unit) Mean() float64 {
 	if u.count != 0 {
 		return u.sum / float64(u.count)
 	} else {
@@ -22,7 +26,7 @@ func (u *Unit) GetMean() float64 {
 	}
 }
 
-// GetSum returns summary value.
-func (u *Unit) GetSum() float64 {
+// Sum returns summary value.
+func (u *Unit) Sum() float64 {
 	return u.sum
 }
