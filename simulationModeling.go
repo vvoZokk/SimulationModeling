@@ -2,13 +2,12 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"math/rand"
 	"os"
-	"path/filepath"
 	"sim"
 	"sim/transaction"
-	"strconv"
 	"time"
 )
 
@@ -187,53 +186,27 @@ func main() {
 	duration := 24.0
 	outFile := os.Stdout
 	defer outFile.Close()
-	if len(os.Args) != 1 {
-		helpString := fmt.Sprint(fmt.Sprintf("usage: %s [-h] [-o FILE] [-d DURATION]\n\n", filepath.Base(os.Args[0])),
-			"Crossing Loop Simulation\n\n",
-			"optional arguments:\n",
-			"  -h, --help\t show this help message and exit\n",
-			"  -o FILE\t write output to FILE\n",
-			"  -d DURATION\t set simulation duration in hours (default: 24)")
-		for i := 1; i < len(os.Args); i++ {
-			key := os.Args[i]
-			switch {
-			case key == "-h" || key == "--help":
-				fmt.Println(helpString)
-				os.Exit(1)
-			case key == "-d":
-				if i+1 == len(os.Args) {
-					fmt.Println(helpString)
-					os.Exit(1)
-				}
-				if f, err := strconv.ParseFloat(os.Args[i+1], 64); err != nil {
-					fmt.Println(err)
-					fmt.Println(helpString)
-					os.Exit(1)
-				} else {
-					duration = f
-					i++
-				}
-			case key == "-o":
-				if i+1 == len(os.Args) {
-					fmt.Println(helpString)
-					os.Exit(1)
-				}
-				fileName := os.Args[i+1]
-				if file, err := os.Create(fileName); err != nil {
-					fmt.Println(err)
-					fmt.Println(helpString)
-					os.Exit(1)
-				} else {
-					outFile = file
-					i++
-				}
 
-			default:
-				fmt.Println(helpString)
-				os.Exit(1)
-			}
+	outputFlag := flag.String("o", "", "write output to file")
+	durationFlag := flag.Float64("d", 24, "set simulation duration in hours")
+	flag.Parse()
+	if *outputFlag != "" {
+		if file, err := os.Create(*outputFlag); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		} else {
+			outFile = file
 		}
 	}
+	duration = *durationFlag
+	/*
+		helpString := fmt.Sprint(fmt.Sprintf("usage: %s [-h] [-o FILE] [-d DURATION]\n\n", filepath.Base(os.Args[0])),
+					"Crossing Loop Simulation\n\n",
+					"optional arguments:\n",
+					"  -h, --help\t show this help message and exit\n",
+					"  -o FILE\t write output to FILE\n",
+					"  -d DURATION\t set simulation duration in hours (default: 24)")
+	*/
 
 	// Init section
 
