@@ -5,9 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"sim/chain"
-	"sim/statistic"
-	"sim/transaction"
+	"simulation-modeling/statistic"
 )
 
 // List of supported states of points.
@@ -28,9 +26,9 @@ type Sim struct {
 	pointState     []int
 	idCounter      int
 	simTime        float64
-	fec            *chain.EventChain
+	fec            *EventChain
 	pointStatistic []statistic.Unit
-	waitingList    []*transaction.Transaction
+	waitingList    []*Transaction
 	finish         bool
 }
 
@@ -42,9 +40,9 @@ func New(points int) *Sim {
 		make([]int, points),
 		0,
 		0.0,
-		chain.New("FEC"),
+		NewChain("FEC"),
 		make([]statistic.Unit, points),
-		make([]*transaction.Transaction, 0, 10),
+		make([]*Transaction, 0, 10),
 		true}
 }
 
@@ -60,11 +58,11 @@ func (s *Sim) Init() {
 // Generate creates new transaction in simulator by target waypoint.
 func (s *Sim) Generate(nextTime float64, targetPoint int) error {
 	s.idCounter++
-	return s.fec.Insert(transaction.New(s.idCounter, s.simTime+nextTime, targetPoint))
+	return s.fec.Insert(NewTransaction(s.idCounter, s.simTime+nextTime, targetPoint))
 }
 
 // Advance moves transaction to next waypoint by specified time.
-func (s *Sim) Advance(tr *transaction.Transaction, nextTime float64, nextPoint int) {
+func (s *Sim) Advance(tr *Transaction, nextTime float64, nextPoint int) {
 	tr.CorrectTime(nextTime, nextPoint)
 }
 
@@ -115,16 +113,16 @@ func (s *Sim) Terminate() {
 }
 
 // AddToWaitlist adds transaction to waitlist.
-func (s *Sim) AddToWaitlist(tr *transaction.Transaction) int {
+func (s *Sim) AddToWaitlist(tr *Transaction) int {
 	s.waitingList = append(s.waitingList, tr)
 	return len(s.waitingList)
 }
 
 // RemoveFromWaitlist removes transaction from waitlist.
-func (s *Sim) RemoveFromWaitlist(tr *transaction.Transaction) int {
+func (s *Sim) RemoveFromWaitlist(tr *Transaction) int {
 	number, check := 0, false
 	for i := 0; i < len(s.waitingList); i++ {
-		if transaction.GetId(*s.waitingList[i]) == transaction.GetId(*tr) {
+		if GetId(*s.waitingList[i]) == GetId(*tr) {
 			number = i
 			check = true
 			break
@@ -137,9 +135,9 @@ func (s *Sim) RemoveFromWaitlist(tr *transaction.Transaction) int {
 }
 
 // UsePoint releases current, seizes next waypoint and sets next waypoint for transaction,
-func (s *Sim) UsePoint(tr *transaction.Transaction, nextTime float64, nextPoint int) error {
+func (s *Sim) UsePoint(tr *Transaction, nextTime float64, nextPoint int) error {
 	//fmt.Println("GEBUG PRINT IN USE: ", Tr)
-	points := transaction.GetPoints(*tr)
+	points := GetPoints(*tr)
 	if err := s.ReleasePoint(points.Current); err != nil {
 		return err
 	}
@@ -168,17 +166,17 @@ func (s *Sim) CorrectTime(newTime float64) error {
 }
 
 // Extraction returns current events chain.
-func (s *Sim) Extraction() ([]*transaction.Transaction, error) {
+func (s *Sim) Extraction() ([]*Transaction, error) {
 	if cec, err := s.fec.GetHead(); err != nil {
 		return nil, err
 	} else {
-		s.simTime = transaction.GetTime(*cec[0])
+		s.simTime = GetTime(*cec[0])
 		return cec, nil
 	}
 }
 
 // GetWaitlist returns waitlist.
-func (s *Sim) GetWaitlist() []*transaction.Transaction {
+func (s *Sim) GetWaitlist() []*Transaction {
 	return s.waitingList
 }
 

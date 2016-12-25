@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"sim"
-	"sim/transaction"
+	"simulation-modeling/sim"
 	"time"
 )
 
@@ -59,21 +58,21 @@ func GenerateUniform(S *sim.Sim, R *rand.Rand, Limits sim.Pair, PointList []int)
 	}
 }
 
-func UseBlock(S *sim.Sim, Tr *transaction.Transaction, Time float64, NextPoint int) {
+func UseBlock(S *sim.Sim, Tr *sim.Transaction, Time float64, NextPoint int) {
 	if err := S.UsePoint(Tr, Time, NextPoint); err != nil {
 		fmt.Println(err, S.DebugString())
 		os.Exit(1)
 	}
 }
 
-func Phases(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[transaction.Points][]int, RoadMap map[Checks][]Action) {
+func Phases(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map[sim.Points][]int, RoadMap map[Checks][]Action) {
 	cec, err := S.Extraction()
 	if err != nil {
 		fmt.Println(err, S.DebugString())
 		os.Exit(1)
 	}
 	for _, tr := range cec {
-		points := transaction.GetPoints(*tr)
+		points := sim.GetPoints(*tr)
 		check, err := S.Test(CheckTable[points])
 		if err != nil {
 			fmt.Println(err, S.DebugString())
@@ -116,7 +115,7 @@ func Phases(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map
 	}
 	for i := 0; i < len(S.GetWaitlist()); i++ {
 		waitList := S.GetWaitlist()
-		points := transaction.GetPoints(*waitList[i])
+		points := sim.GetPoints(*waitList[i])
 		check, err := S.Test(CheckTable[points])
 		if err != nil {
 			fmt.Println(err, S.DebugString())
@@ -124,7 +123,7 @@ func Phases(S *sim.Sim, R *rand.Rand, TimeTable map[int]sim.Pair, CheckTable map
 		}
 		actions := RoadMap[Checks{points.Current, points.Next, check}]
 		for _, action := range actions {
-			waitingTime := S.GetSimTime() - transaction.GetTime(*waitList[i])
+			waitingTime := S.GetSimTime() - sim.GetTime(*waitList[i])
 			if action.Type == Use {
 				// GEBUG PRINT
 				//fmt.Println("USE ACTION FOR WAITING TRANSACTION")
@@ -216,15 +215,15 @@ func main() {
 		BC:      sim.Pair{17, 23},
 		Timer:   sim.Pair{duration * 60, duration * 60}}
 
-	checks := map[transaction.Points][]int{
-		transaction.Points{Point0, PointA}:   []int{PointAC, PointCm, PointCr},
-		transaction.Points{Point0, PointB}:   []int{PointBC, PointCm, PointCr},
-		transaction.Points{PointA, PointAC}:  []int{PointBC},
-		transaction.Points{PointCr, PointBC}: []int{PointBC},
-		transaction.Points{PointCm, PointBC}: []int{PointBC},
-		transaction.Points{PointB, PointCr}:  []int{PointAC},
-		transaction.Points{PointCr, PointAC}: []int{PointAC},
-		transaction.Points{PointCm, PointAC}: []int{PointAC},
+	checks := map[sim.Points][]int{
+		sim.Points{Point0, PointA}:   []int{PointAC, PointCm, PointCr},
+		sim.Points{Point0, PointB}:   []int{PointBC, PointCm, PointCr},
+		sim.Points{PointA, PointAC}:  []int{PointBC},
+		sim.Points{PointCr, PointBC}: []int{PointBC},
+		sim.Points{PointCm, PointBC}: []int{PointBC},
+		sim.Points{PointB, PointCr}:  []int{PointAC},
+		sim.Points{PointCr, PointAC}: []int{PointAC},
+		sim.Points{PointCm, PointAC}: []int{PointAC},
 	}
 
 	transfers := map[Checks][]Action{
@@ -271,7 +270,6 @@ func main() {
 	}
 
 	// Get statistic
-
 	WriteData(writer, "Crossing loop simulation statistic\n")
 	WriteData(writer, fmt.Sprintf("Duration: %.0f minutes\n", duration*60))
 	WriteData(writer, fmt.Sprintf("Mean waiting time on station A: %.2f\n", GetMeanTime(CLSim, PointA)))

@@ -1,5 +1,4 @@
-// Package transaction implements single transaction for simulation modeling.
-package transaction
+package sim
 
 import (
 	"fmt"
@@ -10,14 +9,14 @@ type Points struct {
 	Current, Next int
 }
 
-// Single transacctioin.
+// Single transaction.
 type Transaction struct {
 	id, currentPoint, nextPoint int
 	time, lifetime              float64
 }
 
 // New returns new transaction by id, initial value of timer and index of next waypoint.
-func New(id int, time float64, nextPoint int) *Transaction {
+func NewTransaction(id int, time float64, nextPoint int) *Transaction {
 	return &Transaction{id, 0, nextPoint, time, 0}
 }
 
